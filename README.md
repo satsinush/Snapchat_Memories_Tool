@@ -150,7 +150,7 @@ To use this tool, you must first export your data from Snapchat.
 >
 > **If you have a past version of Snapchat's "My Data" export where all the memories came in their own dedicated `memories/` folder:**
 >
-> Put the content of that memories folder into `Snapchat_Memories_Tool/input/memories/` and you can skip steps 2 and 3 in this section and go straight to [Step 4 – Download Chat Media](#step-4-–-download-chat-media)
+> Put the content of that memories folder into `Snapchat_Memories_Tool/input/memories/` and you can skip steps 2 and 3 in this section and go straight to [Step 4 - Move Chat Media](#step-4---move-chat-media)
 >
 > **However, if you are exporting your data now:**
 >
@@ -232,7 +232,7 @@ This will display **every file inside every subfolder**.
 7. Press `Ctrl + A` (Windows) or `Cmd + A` (Mac) to select everything.
 8. Drag or paste all files into `Snapchat_Memories_Tool/input/memories/`
 
-### Step 4 – Move Chat Media
+### Step 4 - Move Chat Media
 
 Now Move the Contents of the chat_media folder into `Snapchat_Memories_Tool/input/chat_media/`:
 
