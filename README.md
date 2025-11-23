@@ -83,38 +83,182 @@ List of all tool’s features along with a high-level explanation of how each fu
 
 ---
 
-## 📦 Downloading Your Snapchat Data
+## ⬇️ Clone or Download the Repository
 
-To use this tool, you’ll need to export your Snapchat data from the official **My Data** page.
+If you have Git installed:
+
+```bash
+git clone https://github.com/sean-mehra/Snapchat_Memories_Tool.git
+cd Snapchat_Memories_Tool
+```
+
+> 💡 **Alternatively:**  
+> If you’re not using Git, go to the repository webpage and click  
+> **Code → Download ZIP**, then extract it.
+
+---
+
+## 📦 Downloading Your Snapchat Data and Setting Up Folders
+
+> ⚠️ **Export format notice** ⚠️  
+> Snapchat has changed how _My Data_ exports work.  
+> Older exports came with all Memories already bundled inside a `memories/` folder.  
+> New exports instead provide a `memories_history.html` file which links to where users have to **download individual ZIP files for each memory**.
+>
+> This tool was originally designed for the older format but **fully supports the current export system** — it just requires one extra step of manually consolidating the memories files.
+
+To use this tool, you must first export your data from Snapchat.
+
+### Step 1 – Request your Snapchat data
 
 1. Go to [Snapchat’s My Data page](https://accounts.snapchat.com/accounts/downloadmydata).
 
-2. Log in.
+2. Log in with your Snapchat account.
 
-3. In the export options, make sure the following boxes are checked:
+3. Make sure the following boxes are selected:
    - ✅ **Memories**
    - ✅ **JSON Files**
    - ✅ **Chat Media**
 
-![Export Data 1](examples/Export_Data_1.png)
+<p>
+  <img src="examples/Export_Data_1.png" width="450">
+</p>
 
-4. Select **All Time** from date range and enter the email you want to send the data too.
+4. Select **All Time** for the date range and enter an email where Snapchat can send your export link.
 
-![Export Data 2](examples/Export_Data_2.jpeg)
+<p>
+  <img src="examples/Export_Data_2.jpeg" width="300">
+</p>
 
-5. Wait for Snapchat to email you a download link (this may take a long time), then click the link and extract the ZIP file.
+5. Wait for Snapchat to email you a download link (this may take a while).
 
-![Export Data 3](examples/Export_Data_3.jpeg)
-![Email](examples/Email.jpeg)
-![Export Data 4](examples/Export_Data_4.png)
+<p>
+  <img src="examples/Export_Data_3.jpeg" width="300">
+</p>
 
-6. Inside the ZIP, locate:
+<p>
+  <img src="examples/Email.jpeg" width="500">
+</p>
 
-   - `memories/` — folder containing photos and videos
-   - `chat_media/` — folder containing saved media from chats
-   - `memories_history.json` — metadata file with timestamps, GPS, etc.
+6. Download and extract the main ZIP file.
 
-7. Move those three items into the `input/` folder before running the script.
+<p>
+  <img src="examples/Export_Data_4.png" width="300">
+</p>
+
+> ⚠️ **Important:**
+>
+> **If you have a past version of Snapchat's "My Data" export where all the memories came in their own dedicated `memories/` folder:**
+>
+> Put the content of that memories folder into `Snapchat_Memories_Tool/input/memories/` and you can skip steps 2 and 3 in this section and go straight to [Step 4 – Download Chat Media](#step-4-–-download-chat-media)
+>
+> **However, if you are exporting your data now:**
+>
+> Snapchat requires users to download all their memories in individual zipped files through their website.
+>
+> **Steps provided for the setup below.**
+
+### Step 2 – Download your Memories (new export format)
+
+After extracting the ZIP, find and open `memories_history.html` in the `mydata~X/html/`
+
+<p>
+  <img src="examples/Export_Data_5.png" width="400">
+</p>
+
+<p>
+  <img src="examples/Export_Data_6.png" width="400">
+</p>
+
+This will open a webpage with your Snapchat Memories all listed avaliable to download.
+
+<p>
+  <img src="examples/Export_Data_7.png" width="700">
+</p>
+
+Wait for all the downloads to complete. Each memory will download as its own ZIP file.
+
+<p>
+  <img src="examples/Export_Data_8.png" width="500">
+</p>
+
+<p>
+  <img src="examples/Export_Data_9.png" width="500">
+</p>
+
+<p>
+  <img src="examples/Export_Data_10.png" width="400">
+</p>
+
+### Step 3 – Extract all memory ZIP files into one folder
+
+Now extract **all downloaded memory ZIP files** and put the contents into one folder.
+
+This can be done manually. However, manually opening each unzipped folder then copying and pasting its contents into a seperate folder can be time consuming depending on how many folders Snapchat generates, so listed below are steps to help guide users on how to do this in a streamlined fashion:
+
+Extract multiple ZIP files at once:
+
+1. Sort by `File Type` (Windows) or `Kind` (Mac) by clicking the column heading (if one of those headings is not there right click the heading row and select it from the options)
+
+<p>
+  <img src="examples/Export_Data_11.png" width="300">
+</p>
+
+2. Look for the Zipped files and highlight them.
+3. Right-click and select **Extract All / Open / Uncompress**.
+
+<p>
+  <img src="examples/Export_Data_12.png" width="700">
+</p>
+
+Your system will extract them into multiple unzipped folders.
+
+4. Next create a seperate folder that will be dedicated to put all the extracted unzipped folders into.
+
+<p>
+  <img src="examples/Export_Data_13.png" width="400">
+</p>
+
+This folder is temorary and is just meant to put all the unzipped folders in one place.
+
+5. Open that parent folder containing all the extracted folders and click the search bar in the top-right corner. Then type "`.`" into the search.
+
+<p>
+  <img src="examples/Export_Data_14.png" width="700">
+</p>
+
+This will display **every file inside every subfolder**.
+
+7. Press `Ctrl + A` (Windows) or `Cmd + A` (Mac) to select everything.
+8. Drag or paste all files into `Snapchat_Memories_Tool/input/memories/`
+
+### Step 4 – Move Chat Media
+
+Now Move the Contents of the chat_media folder into `Snapchat_Memories_Tool/input/chat_media/`:
+
+👉 Final goal:
+
+- All memory media → `input/memories/`
+- All chat media → `input/chat_media/`
+
+### Step 5 – Locate the JSON metadata file
+
+In your exported Snapchat data, locate:
+`memories_history.json` in the `json/` folder
+
+Copy this file into your `input/` folder.
+
+### ✅ Final `input` folder structure
+
+Once everything is ready, your folder must look exactly like this:
+
+```text
+Snapchat_Memories_Tool/
+  input/
+    memories/
+    chat_media/
+    memories_history.json
+```
 
 ---
 
@@ -158,20 +302,7 @@ Python 3.x.x
 
 > 💡 **Tip:** If both `python` and `python3` work on your system, use whichever one prints a Python 3 version.
 
-### 2. Clone or Download the Repository
-
-If you have Git installed:
-
-```bash
-git clone https://github.com/sean-mehra/Snapchat_Memories_Tool.git
-cd Snapchat_Memories_Tool
-```
-
-> 💡 **Alternatively:**  
-> If you’re not using Git, go to the repository webpage and click  
-> **Code → Download ZIP**, then extract it.
-
-### 3. Install Required Programs
+### 2. Install Required Programs
 
 - #### 🧾 [**Download ExifTool**](https://exiftool.org/) — used to read and write photo and video metadata.
 
@@ -213,10 +344,11 @@ cd Snapchat_Memories_Tool
 > brew install ffmpeg exiftool
 > ```
 >
-> ⚠️ **Important:** Don’t mix installs. Use **either** a global install **or** local executables in this folder — **not both**.  
+> ⚠️ **Important:**  
+> Don’t mix installs. Use **either** a global install **or** local executables in this folder — **not both**.  
 > If you use Chocolatey/Homebrew (global), **do not place `ffmpeg.exe` or `exiftool.exe` in the project folder**, or the script may fail to detect the correct one.
 
-### 4. Install Required Python Packages
+### 3. Install Required Python Packages
 
 Open your terminal or PowerShell and run this command **once**:
 
@@ -294,10 +426,6 @@ or the script appears to do nothing — macOS likely blocked the tool.
 
 **Your project folder should look like this:**
 
-![Folder Layout](examples/File_Layout.png)
-![Input Folder Layout](examples/Input_Layout.png)
-![Folder Layout](examples/Output_Layout.png)
-
 ```
 Snapchat_Memories_Tool/
 │
@@ -316,11 +444,16 @@ Snapchat_Memories_Tool/
 ├── ffmpeg.exe                     (FFmpeg executable for video processing)
 ├── snapchat_metadata.py           (main Python script)
 ├── README.md                      (directions)
+├── LICENSE.txt                    (project license)
 ├── Code_Logic.md                  (explanation of how each function works)
 └── examples/                      (demonstration images for README.md)
 ```
 
-> The `input` folder should contain your `memories`, `chat_media`, and `memories_history.json` files exactly as downloaded from the Snapchat “My Data” portal.
+![Folder Layout](examples/File_Layout.png)
+![Input Folder Layout](examples/Input_Layout.png)
+![Folder Layout](examples/Output_Layout.png)
+
+> The `input` folder should contain your `memories`, `chat_media`, and `memories_history.json` files as downloaded from the Snapchat “My Data” portal.
 
 > ⚙️ **Note:**  
 > Most users should place both `ffmpeg.exe` and `exiftool.exe` in the main project folder (as shown above).  
