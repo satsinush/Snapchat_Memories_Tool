@@ -98,7 +98,7 @@ cd Snapchat_Memories_Tool
 
 ---
 
-## 📦 Downloading Your Snapchat Data and Setting Up Folders
+## 📦 Downloading Your Snapchat Data and Moving its Folders
 
 > ⚠️ **Export format notice** ⚠️  
 > Snapchat has changed how _My Data_ exports work.  
@@ -192,20 +192,58 @@ Wait for all the downloads to complete. Each memory will download as its own ZIP
 
 ### Step 3 – Extract all memory ZIP files into one folder
 
-Now extract **all downloaded memory ZIP files** and put the contents into one folder.
+Now extract **all downloaded memory ZIP files** and put the contents into `Snapchat_Memories_Tool/input/memories/`.
+
+> If you do not need help doing this go straight to [Step 4 - Move Chat Media](#step-4---move-chat-media)
 
 This can be done manually. However, manually opening each unzipped folder then copying and pasting its contents into a seperate folder can be time consuming depending on how many folders Snapchat generates, so listed below are steps to help guide users on how to do this in a streamlined fashion:
 
-Extract multiple ZIP files at once:
+First create a seperate folder that will temporarily be dedicated to put all the extracted unzipped folders into one place.  
+(For this example I named the folder `memories temp`)
 
-1. Sort by `File Type` (Windows) or `Kind` (Mac) by clicking the column heading (if one of those headings is not there right click the heading row and select it from the options)
+#### 🪟 Windows
+
+> Windows does not natively allow users to extract multiple zipped files at once.  
+> In order to accomplish this a zip tool needs to be used — for this example I am using [7-Zip](https://www.7-zip.org/).
+
+Open the 7zFM Application and open the folder with all the zipped files (here it is the downloads folder)
+
+<p>
+  <img src="examples/7-Zip.png" width="1000">
+</p>
+
+Go to `view` and select `Type` so all the zipped files are next to each other
+
+<p>
+  <img src="examples/Run_7-Zip.png" width="300">
+</p>
+
+Highlight all the zipped files and press `Extract`
+
+<p>
+  <img src="examples/7-Zip_Select_All.png" width="600">
+</p>
+
+Enter the path for the `memories temp` folder
+
+<p>
+  <img src="examples/Extract_All_7-Zip.png" width="500">
+</p>
+
+The program will extract them into multiple unzipped folders.
+
+For the next steps continue [here](#now-open-the-memories-temp-folder).
+
+#### 🍏 macOS
+
+Sort by `Kind` by clicking the column heading so all the zipped files are next to each other (if one of those headings is not there right click the heading row and select it from the options)
 
 <p>
   <img src="examples/Export_Data_11.png" width="300">
 </p>
 
-2. Look for the Zipped files and highlight them.
-3. Right-click and select **Extract All / Open / Uncompress**.
+Look for the Zipped files and highlight them.
+Right-click and select **Open With > Archive Utility**.
 
 <p>
   <img src="examples/Export_Data_12.png" width="700">
@@ -213,15 +251,15 @@ Extract multiple ZIP files at once:
 
 Your system will extract them into multiple unzipped folders.
 
-4. Next create a seperate folder that will be dedicated to put all the extracted unzipped folders into.
+Next move the extracted folders to the `memories temp` folder
 
 <p>
   <img src="examples/Export_Data_13.png" width="400">
 </p>
 
-This folder is temorary and is just meant to put all the unzipped folders in one place.
+#### Now open the `memories temp` folder
 
-5. Open that parent folder containing all the extracted folders and click the search bar in the top-right corner. Then type "`.`" into the search.
+Click the search bar in the top-right corner. Then type "`.`" into the search.
 
 <p>
   <img src="examples/Export_Data_14.png" width="700">
@@ -229,12 +267,11 @@ This folder is temorary and is just meant to put all the unzipped folders in one
 
 This will display **every file inside every subfolder**.
 
-7. Press `Ctrl + A` (Windows) or `Cmd + A` (Mac) to select everything.
-8. Drag or paste all files into `Snapchat_Memories_Tool/input/memories/`
+Select all the photo and video files then drag or copy and paste them into `Snapchat_Memories_Tool/input/memories/`
 
 ### Step 4 - Move Chat Media
 
-Now Move the Contents of the chat_media folder into `Snapchat_Memories_Tool/input/chat_media/`:
+Now move the Contents of the chat_media folder into `Snapchat_Memories_Tool/input/chat_media/`:
 
 👉 Final goal:
 
@@ -250,7 +287,7 @@ Copy this file into your `input/` folder.
 
 ### ✅ Final `input` folder structure
 
-Once everything is ready, your folder must look exactly like this:
+Once everything is ready, your folder should look like this:
 
 ```text
 Snapchat_Memories_Tool/
@@ -364,57 +401,11 @@ Successfully installed pytz tzlocal timezonefinder Pillow
 
 ---
 
-## 🔒 System Security Reminders
-
-### Windows 🪟
-
-Windows may block outside downloads the first time you run them.
-
-If you see a popup saying:
-
-> "Windows protected your PC"
-
-This is normal — Windows is warning you because the tools were downloaded from the internet.
-
-**To allow them:**
-
-1. Click **More info**
-2. Click **Run anyway**
-
-Once approved the first time, they will run normally.
-
-> 💡 **Tip:**
-> If Windows deletes the file immediately after download, check **Windows Security → Virus & threat protection → Protection history** and restore it.
-
-### macOS 🍏
-
-macOS may block outside applications when you first download them.
-
-If you see a message such as:
-
-> "application cannot be opened because it is from an unidentified developer."
-
-or the script appears to do nothing — macOS likely blocked the tool.
-
-**To allow them:**
-
-1. Open **System Settings**
-2. Go to **Privacy & Security**
-3. Scroll down to the **Security** section
-4. Click **Allow Anyway** next to the application
-5. Run the script again
-
-> 💡 **Tip:**  
-> Sometimes macOS hides the popup behind other windows.  
-> If you don’t see a warning, still check **System Settings → Privacy & Security**.
-
----
-
-## 🗂️ Folder Setup
+## 🗂️ Final Folder Setup
 
 **Place your exported Snapchat data into the input folder.**
 
-- Make sure you’ve already exported your data following the [📦 Downloading Your Snapchat Data](#-downloading-your-snapchat-data) instructions.
+- Make sure you’ve already exported your data and moved files following the [📦 Downloading Your Snapchat Data and Moving its Folders](#📦-downloading-your-snapchat-data-and-moving-its-folders) instructions.
 - Include these three items inside the `input/` folder:
   - `memories/` — folder containing exported Memories (photos/videos)
   - `chat_media/` — folder containing saved media from chats (photos/videos/voice messages)
@@ -535,6 +526,55 @@ After processing completes, use the files from the `output/memories_system_time/
 > _Using `memories_location_time/` can cause timestamps to appear double-adjusted._  
 > Run the script and upload your files while your device is in the **same timezone**.  
 > _Uploading from a different timezone than where the script was run can shift timestamps by several hours._
+>
+> For users utilizing the **latest version of "My Data"** Exports there may be some photo and/or video files that were not put in any zipped folders when downloaded. They appear to mostly be photos and videos saved to Snapchat Memories from the camera roll.  
+> These can be uploaded to iCloud Photos as well but their times will be in UTC time and they will not have any geolocation metadata
+
+---
+
+## 🔒 System Security Reminders
+
+### Windows 🪟
+
+Windows may block outside downloads the first time you run them.
+
+If you see a popup saying:
+
+> "Windows protected your PC"
+
+This is normal — Windows is warning you because the tools were downloaded from the internet.
+
+**To allow them:**
+
+1. Click **More info**
+2. Click **Run anyway**
+
+Once approved the first time, they will run normally.
+
+> 💡 **Tip:**
+> If Windows deletes the file immediately after download, check **Windows Security → Virus & threat protection → Protection history** and restore it.
+
+### macOS 🍏
+
+macOS may block outside applications when you first download them.
+
+If you see a message such as:
+
+> "application cannot be opened because it is from an unidentified developer."
+
+or the script appears to do nothing — macOS likely blocked the tool.
+
+**To allow them:**
+
+1. Open **System Settings**
+2. Go to **Privacy & Security**
+3. Scroll down to the **Security** section
+4. Click **Allow Anyway** next to the application
+5. Run the script again
+
+> 💡 **Tip:**  
+> Sometimes macOS hides the popup behind other windows.  
+> If you don’t see a warning, still check **System Settings → Privacy & Security**.
 
 ---
 
@@ -558,12 +598,15 @@ See the `LICENSE` file for full details.
 
 ---
 
-## 🙌 Acknowledgments
+## 🙌 Acknowledgments & Background
 
-I understand that this tool may not be easy to use for non-developers, which is why I’ve included detailed explanations throughout this README and created a full video tutorial to guide users step-by-step.
+I understand that this tool may not be easy to use for non-developers, which is why I have included detailed explanations throughout this README and created a full video tutorial to guide users step-by-step.
 
 If you still encounter issues, you can upload this `README.md` and the `snapchat_metadata.py` file into a generative AI tool such as **ChatGPT** or **Gemini** and ask for assistance. It can assist you throughout the setup and even help you troubleshoot.
 
-This project was built through extensive testing and iteration using **Python**, **ExifTool**, and **FFmpeg**. It was inspired by the need to restore accurate metadata and organization to Snapchat Memories and Chat Media after exporting a user’s data from the Snapchat website.
+This tool was originally built for Snapchat’s older export format where all Memories were delivered in a single `memories/` folder.  
+Snapchat has since moved to a system where memories must be downloaded individually through `memories_history.html`. While this tool still fully supports the new format, it now requires users to manually consolidate those files first.
 
-While other developers have built similar tools in the past, they do not handle timezone-based adjustments for memories, compile video memories, or process `chat_media` files. Additionally, many existing programs rely on active download links from the `memories_history.json` file. This tool instead works directly with the locally downloaded files — meaning it continues to function even if those links expire or are no longer live.
+This project was created through extensive testing and iteration using **Python**, **ExifTool**, and **FFmpeg** with real exported Snapchat data from across multiple years. It was inspired by the need to restore accurate metadata and organization to Snapchat Memories and Chat Media after exporting a user’s data from the Snapchat website.
+
+While other developers have built similar tools in the past, they do not handle timezone-based adjustments for memories, compile video memories, or process `chat_media` files. Additionally, many existing programs rely on active download links from the `memories_history.json` file. Unlike many existing tools, this project does not depend on Snapchat’s expiring download URLs. It processes already-downloaded media directly, ensuring usability even after the download links expire.
