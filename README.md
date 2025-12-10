@@ -21,7 +21,7 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
 - Photos and Videos compatible with Apple Photos
 - Renames files by date and time
 
-<h2 align="center">Memories</h1>
+<h2 align="center" id="memories">Memories</h2>
 
 ![Memories](examples/Memories.png)
 
@@ -31,9 +31,49 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
 
 ![Apple Photos](examples/Apple_Photos.png)
 
-<h2 align="center">Chat Media</h1>
+<h2 align="center" id="chat-media">Chat Media</h2>
 
 ![Chat Media](examples/Chat_Media.png)
+
+---
+
+## 📌 Table of Contents
+
+- [📖 Overview](#📖-overview)
+- [🎬 YouTube Video Demonstration](#🎬-watch-the-full-demo-on-youtube)
+- [✨ Key Features](#✨-key-features)
+- [📸 Memories](#memories)
+- [📩 Chat Media](#chat-media)
+- [🧩 Extensive Feature List / How it Works](#🧩-extensive-feature-list--how-it-works)
+- [⬇️ Clone or Download the Repository](#⬇️-clone-or-download-the-repository)
+- [📦 Downloading Your Snapchat Data and Moving its Folders](#📦-downloading-your-snapchat-data-and-moving-its-folders)
+  - [Step 1 - Request your Snapchat data](#step-1---request-your-snapchat-data)
+  - [Step 2 - Download your Memories](#step-2---download-your-memories-new-export-format)
+  - [Step 3 - Extract all memory ZIP files into one folder](#step-3---extract-all-memory-zip-files-into-one-folder)
+    - [🪟 Windows](#🪟-windows)
+    - [🍏 macOS](#🍏-macos)
+  - [Step 4 - Move Chat Media](#step-4---move-chat-media)
+  - [Step 5 - Locate the JSON metadata file](#step-5---locate-the-json-metadata-file)
+  - [Final input folder structure](#final-input-folder-structure)
+- [⚙️ Installation](#⚙️-installation)
+  - [1. Install Python](#1-install-python)
+    - [🪟 Windows](#install-python-windows)
+    - [🍏 macOS](#install-python-macos)
+  - [2. Install Required Programs](#2-install-required-programs)
+    - [🧾 Download ExifTool](#🧾-download-exiftool--used-to-read-and-write-photo-and-video-metadata)
+    - [🧩 Download FFmpeg](#🧩-download-ffmpeg--used-to-process-and-merge-videos)
+  - [3. Install Required Python Packages](#3-install-required-python-packages)
+- [🗂️ Final Folder Setup](#🗂️-final-folder-setup)
+- [▶️ How to Run Script](#▶️-how-to-run-script)
+- [📤 Importing to Apple Photos](#📤-importing-to-apple-photos-mac-or-icloud-for-windows)
+  - [🪟 Windows Users](#🪟-windows-users-via-icloud-for-windows)
+  - [🍏 Mac Users](#🍏-mac-users)
+- [🔒 System Security Reminders](#🔒-system-security-reminders)
+  - [Windows 🪟](#windows-🪟)
+  - [macOS 🍏](#macos-🍏)
+- [🧹 Files Not Required to Run the Script](#🧹-files-not-required-to-run-the-script)
+- [🪪 License](#🪪-license)
+- [🙌 Acknowledgments & Background](#🙌-acknowledgments--background)
 
 ---
 
@@ -109,7 +149,7 @@ cd Snapchat_Memories_Tool
 
 To use this tool, you must first export your data from Snapchat.
 
-### Step 1 – Request your Snapchat data
+### Step 1 - Request your Snapchat data
 
 1. Go to [Snapchat’s My Data page](https://accounts.snapchat.com/accounts/downloadmydata).
 
@@ -158,7 +198,7 @@ To use this tool, you must first export your data from Snapchat.
 >
 > **Steps provided for the setup below.**
 
-### Step 2 – Download your Memories (new export format)
+### Step 2 - Download your Memories (new export format)
 
 After extracting the ZIP, find and open `memories_history.html` in the `mydata~X/html/`
 
@@ -190,7 +230,7 @@ Wait for all the downloads to complete. Each memory will download as its own ZIP
   <img src="examples/Export_Data_10.png" width="400">
 </p>
 
-### Step 3 – Extract all memory ZIP files into one folder
+### Step 3 - Extract all memory ZIP files into one folder
 
 Now extract **all downloaded memory ZIP files** and put the contents into `Snapchat_Memories_Tool/input/memories/`.
 
@@ -278,14 +318,14 @@ Now move the Contents of the chat_media folder into `Snapchat_Memories_Tool/inpu
 - All memory media → `input/memories/`
 - All chat media → `input/chat_media/`
 
-### Step 5 – Locate the JSON metadata file
+### Step 5 - Locate the JSON metadata file
 
 In your exported Snapchat data, locate:
 `memories_history.json` in the `json/` folder
 
 Copy this file into your `input/` folder.
 
-### ✅ Final `input` folder structure
+### Final input folder structure
 
 Once everything is ready, your folder should look like this:
 
@@ -305,7 +345,7 @@ Snapchat_Memories_Tool/
 
 This tool is written in Python, so **Python 3 must be installed** before running the script.
 
-#### 🪟 Windows
+<h4 id="install-python-windows">🪟 Windows</h4>
 
 Windows does _not_ include Python by default.
 
@@ -315,7 +355,7 @@ Windows does _not_ include Python by default.
 3. **Important:** Check the box **“Add Python to PATH”** during installation.
 4. Finish the install and restart PowerShell.
 
-#### 🍏 macOS
+<h4 id="install-python-macos">🍏 macOS</h4>
 
 macOS includes an old version of Python by default. Depending on the version it may or not be able to run this script.  
 You must have a modern version of Python 3 installed.
@@ -489,17 +529,17 @@ Snapchat_Memories_Tool/
 
 After processing completes, use the files from the `output/memories_system_time/` folder when importing to Apple Photos to ensure timestamps and GPS data display correctly across all Apple devices.
 
-### 🍏 Mac Users
-
-1. Open the **Photos** app.
-2. Select the processed files you want from the `output/memories_system_time/` folder and copy or drag them to the photos app.
-3. These photos and vidoes will have the correct **date** and **map locations** automatically and can be sorted by Date Captured. They will also show up as a part of the **Import** section of photos.
-
 ### 🪟 Windows Users (via iCloud for Windows)
 
 1. Open the **iCloud Photos** folder in File Explorer.
 2. Copy or drag the processed files from `output/memories_system_time/` into the **iCloud Photos** folder in file explorer.
 3. Wait for them to sync — they’ll appear in your iPhone’s Photos app with correct timestamps and GPS data and can be sorted by Date Captured.
+
+### 🍏 Mac Users
+
+1. Open the **Photos** app.
+2. Select the processed files you want from the `output/memories_system_time/` folder and copy or drag them to the photos app.
+3. These photos and vidoes will have the correct **date** and **map locations** automatically and can be sorted by Date Captured. They will also show up as a part of the **Import** section of photos.
 
 > **🕓 Note on time display:**  
 > Apple Photos on iPhone automatically adjusts timestamps using GPS location data, while the macOS Photos app typically displays the embedded timestamp as-is.  
