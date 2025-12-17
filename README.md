@@ -1,18 +1,20 @@
 # Snapchat Memories and Chat Media Caption Adder and Metadata Restoration Tool
 
-## 📖 Overview
+<h2 id="overview">📖 Overview</h2>
 
 This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures, videos, and voice messages with accurate timestamps, GPS coordinates, and captions where available. It ensures your files appear correctly with all necessary metadata attached to the media files in Windows File Explorer and iCloud Photos, with media properly displayed in map and timeline views.
 
 ![Overview](examples/Overview.png)
 
-### 🎬 Watch the full demo on YouTube
+<h3 id="youtube-demo">🎬 YouTube Video Demonstration</h3>
+
+(Video not made yet)
 
 [![YouTube video](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
 
 ---
 
-## ✨ Key Features
+<h2 id="key-features">✨ Key Features</h2>
 
 - Restores date, time, and GPS metadata to Memories
 - Adds overlays / captions to Memories
@@ -20,6 +22,46 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
 - Processes Chat Media and voice messages with date metadata
 - Photos and Videos compatible with Apple Photos
 - Renames files by date and time
+
+---
+
+## 📌 Table of Contents
+
+- [📖 Overview](#overview)
+- [🎬 YouTube Video Demonstration](#youtube-demo)
+- [✨ Key Features](#key-features)
+- [📸 Memories](#memories)
+- [📩 Chat Media](#chat-media)
+- [🧩 Extensive Feature List / How it Works](#how-it-works)
+- [⬇️ Clone or Download the Repository](#clone-download)
+- [📦 Downloading Your Snapchat Data and Moving its Folders](#download-snapchat-data)
+  - [Step 1 - Request your Snapchat data](#step-1---request-your-snapchat-data)
+  - [Step 2 - Download your Memories](#step-2---download-your-memories-new-export-format)
+  - [Step 3 - Extract all memory ZIP files into one folder](#step-3---extract-all-memory-zip-files-into-one-folder)
+    - [🪟 Windows](#download-windows)
+    - [🍏 macOS](#download-macos)
+  - [Step 4 - Move Chat Media](#step-4---move-chat-media)
+  - [Step 5 - Locate the JSON metadata file](#step-5---locate-the-json-metadata-file)
+  - [Final input folder structure](#final-input-folder-structure)
+- [⚙️ Installation](#installation)
+  - [1. Install Python](#1-install-python)
+    - [🪟 Windows](#install-python-windows)
+    - [🍏 macOS](#install-python-macos)
+  - [2. Install Required Programs](#2-install-required-programs)
+    - [🧾 Download ExifTool](#download-exiftool)
+    - [🧩 Download FFmpeg](#download-ffmpeg)
+  - [3. Install Required Python Packages](#3-install-required-python-packages)
+- [🗂️ Final Folder Setup](#final-folder-setup)
+- [▶️ How to Run Script](#run-script)
+- [📤 Importing to Apple Photos](#import-apple-photos)
+  - [🪟 Windows](#import-windows)
+  - [🍏 MacOS](#import-macos)
+- [🔒 System Security Reminders](#system-security)
+  - [🪟 Windows](#security-windows)
+  - [🍏 macOS](#security-macos)
+- [🧹 Files Not Required to Run the Script](#files-not-required)
+- [🪪 License](#license)
+- [🙌 Acknowledgments & Background](#acknowledgments)
 
 <h2 align="center" id="memories">Memories</h2>
 
@@ -37,47 +79,7 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
 
 ---
 
-## 📌 Table of Contents
-
-- [📖 Overview](#📖-overview)
-- [🎬 YouTube Video Demonstration](#🎬-watch-the-full-demo-on-youtube)
-- [✨ Key Features](#✨-key-features)
-- [📸 Memories](#memories)
-- [📩 Chat Media](#chat-media)
-- [🧩 Extensive Feature List / How it Works](#🧩-extensive-feature-list--how-it-works)
-- [⬇️ Clone or Download the Repository](#⬇️-clone-or-download-the-repository)
-- [📦 Downloading Your Snapchat Data and Moving its Folders](#📦-downloading-your-snapchat-data-and-moving-its-folders)
-  - [Step 1 - Request your Snapchat data](#step-1---request-your-snapchat-data)
-  - [Step 2 - Download your Memories](#step-2---download-your-memories-new-export-format)
-  - [Step 3 - Extract all memory ZIP files into one folder](#step-3---extract-all-memory-zip-files-into-one-folder)
-    - [🪟 Windows](#🪟-windows)
-    - [🍏 macOS](#🍏-macos)
-  - [Step 4 - Move Chat Media](#step-4---move-chat-media)
-  - [Step 5 - Locate the JSON metadata file](#step-5---locate-the-json-metadata-file)
-  - [Final input folder structure](#final-input-folder-structure)
-- [⚙️ Installation](#⚙️-installation)
-  - [1. Install Python](#1-install-python)
-    - [🪟 Windows](#install-python-windows)
-    - [🍏 macOS](#install-python-macos)
-  - [2. Install Required Programs](#2-install-required-programs)
-    - [🧾 Download ExifTool](#🧾-download-exiftool--used-to-read-and-write-photo-and-video-metadata)
-    - [🧩 Download FFmpeg](#🧩-download-ffmpeg--used-to-process-and-merge-videos)
-  - [3. Install Required Python Packages](#3-install-required-python-packages)
-- [🗂️ Final Folder Setup](#🗂️-final-folder-setup)
-- [▶️ How to Run Script](#▶️-how-to-run-script)
-- [📤 Importing to Apple Photos](#📤-importing-to-apple-photos-mac-or-icloud-for-windows)
-  - [🪟 Windows Users](#🪟-windows-users-via-icloud-for-windows)
-  - [🍏 Mac Users](#🍏-mac-users)
-- [🔒 System Security Reminders](#🔒-system-security-reminders)
-  - [Windows 🪟](#windows-🪟)
-  - [macOS 🍏](#macos-🍏)
-- [🧹 Files Not Required to Run the Script](#🧹-files-not-required-to-run-the-script)
-- [🪪 License](#🪪-license)
-- [🙌 Acknowledgments & Background](#🙌-acknowledgments--background)
-
----
-
-## 🧩 Extensive Feature List / How it Works
+<h2 id="how-it-works">🧩 Extensive Feature List / How it Works</h2>
 
 List of all tool’s features along with a high-level explanation of how each function operates.
 (For a deeper look, see the **Code_Logic** file in the repository.)
@@ -123,7 +125,7 @@ List of all tool’s features along with a high-level explanation of how each fu
 
 ---
 
-## ⬇️ Clone or Download the Repository
+<h2 id="clone-download">⬇️ Clone or Download the Repository</h2>
 
 If you have Git installed:
 
@@ -138,7 +140,7 @@ cd Snapchat_Memories_Tool
 
 ---
 
-## 📦 Downloading Your Snapchat Data and Moving its Folders
+<h2 id="download-snapchat-data">📦 Downloading Your Snapchat Data and Moving its Folders</h2>
 
 > ⚠️ **Export format notice** ⚠️  
 > Snapchat has changed how _My Data_ exports work.  
@@ -241,7 +243,7 @@ This can be done manually. However, manually opening each unzipped folder then c
 First create a seperate folder that will temporarily be dedicated to put all the extracted unzipped folders into one place.  
 (For this example I named the folder `memories temp`)
 
-#### 🪟 Windows
+<h4 id="download-windows">🪟 Windows</h4>
 
 > Windows does not natively allow users to extract multiple zipped files at once.  
 > In order to accomplish this a zip tool needs to be used — for this example I am using [7-Zip](https://www.7-zip.org/).
@@ -274,7 +276,7 @@ The program will extract them into multiple unzipped folders.
 
 For the next steps continue [here](#now-open-the-memories-temp-folder).
 
-#### 🍏 macOS
+<h4 id="download-macos">🍏 macOS</h4>
 
 Sort by `Kind` by clicking the column heading so all the zipped files are next to each other (if one of those headings is not there right click the heading row and select it from the options)
 
@@ -339,7 +341,7 @@ Snapchat_Memories_Tool/
 
 ---
 
-## ⚙️ Installation
+<h2 id="installation">⚙️ Installation</h2>
 
 ### 1. Install Python
 
@@ -381,14 +383,14 @@ Python 3.x.x
 
 ### 2. Install Required Programs
 
-- #### 🧾 [**Download ExifTool**](https://exiftool.org/) — used to read and write photo and video metadata.
+- <h4 id="download-exiftool"> 🧾 <a href="https://exiftool.org/" target="_blank"><strong>Download ExifTool</strong></a> — used to read and write photo and video metadata. </h4>
 
   1. Locate the downloaded file — it will usually be named **`exiftool(-k).exe`** on Windows or **`exiftool`** on Mac.
   2. If you see “(-k)” in the name, rename it to **`exiftool.exe`**.
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
   3. Move the single `exiftool.exe` (Windows) or `exiftool` (Mac) file into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
 
-- #### 🧩 [**Download FFmpeg**](https://ffmpeg.org/download.html) — used to process and merge videos.
+- <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg</strong></a> — used to process and merge videos. </h4>
 
   1. Download the ZIP file for your operating system.
   2. Extract the ZIP file.
@@ -441,7 +443,7 @@ Successfully installed pytz tzlocal timezonefinder Pillow
 
 ---
 
-## 🗂️ Final Folder Setup
+<h2 id="final-folder-setup">🗂️ Final Folder Setup</h2>
 
 **Place your exported Snapchat data into the input folder.**
 
@@ -493,7 +495,7 @@ Snapchat_Memories_Tool/
 
 ---
 
-## ▶️ How to Run Script
+<h2 id="run-script">▶️ How to Run Script</h2>
 
 1. **Type this in your terminal or PowerShell to open the project folder:**
 
@@ -525,17 +527,17 @@ Snapchat_Memories_Tool/
 
 ---
 
-## 📤 Importing to Apple Photos (Mac or iCloud for Windows)
+<h2 id="import-apple-photos">📤 Importing to Apple Photos</h2>
 
 After processing completes, use the files from the `output/memories_system_time/` folder when importing to Apple Photos to ensure timestamps and GPS data display correctly across all Apple devices.
 
-### 🪟 Windows Users (via iCloud for Windows)
+<h3 id="import-windows"> 🪟 Windows (via iCloud for Windows)</h3>
 
 1. Open the **iCloud Photos** folder in File Explorer.
 2. Copy or drag the processed files from `output/memories_system_time/` into the **iCloud Photos** folder in file explorer.
 3. Wait for them to sync — they’ll appear in your iPhone’s Photos app with correct timestamps and GPS data and can be sorted by Date Captured.
 
-### 🍏 Mac Users
+<h3 id="import-macos"> 🍏 macOS</h3>
 
 1. Open the **Photos** app.
 2. Select the processed files you want from the `output/memories_system_time/` folder and copy or drag them to the photos app.
@@ -572,9 +574,9 @@ After processing completes, use the files from the `output/memories_system_time/
 
 ---
 
-## 🔒 System Security Reminders
+<h2 id="system-security">🔒 System Security Reminders</h2>
 
-### Windows 🪟
+<h3 id="security-windows"> 🪟 Windows</h3>
 
 Windows may block outside downloads the first time you run them.
 
@@ -594,7 +596,7 @@ Once approved the first time, they will run normally.
 > 💡 **Tip:**
 > If Windows deletes the file immediately after download, check **Windows Security → Virus & threat protection → Protection history** and restore it.
 
-### macOS 🍏
+<h3 id="security-macos"> 🍏 macOS</h3>
 
 macOS may block outside applications when you first download them.
 
@@ -618,7 +620,7 @@ or the script appears to do nothing — macOS likely blocked the tool.
 
 ---
 
-## 🧹 Files Not Required to Run the Script
+<h2 id="files-not-required">🧹 Files Not Required to Run the Script</h2>
 
 - `.git` — Git version tracking folder
 - `.gitignore` — excludes unnecessary files from commits
@@ -631,14 +633,14 @@ or the script appears to do nothing — macOS likely blocked the tool.
 
 ---
 
-## 🪪 License
+<h2 id="license">🪪 License</h2>
 
 This project is licensed under a custom non-commercial license.  
 See the `LICENSE` file for full details.
 
 ---
 
-## 🙌 Acknowledgments & Background
+<h2 id="acknowledgments">🙌 Acknowledgments & Background</h2>
 
 I understand that this tool may not be easy to use for non-developers, which is why I have included detailed explanations throughout this README and created a full video tutorial to guide users step-by-step.
 
