@@ -138,6 +138,8 @@ cd Snapchat_Memories_Tool
 > If you’re not using Git, go to the repository webpage and click  
 > **Code → Download ZIP**, then extract it.
 
+The downloaded folder may have a `-main` written at the end of the filename. You can remove it making sure the folder name is `Snapchat_Memories_Tool` to remain consistent with the rest of the directions here.
+
 ---
 
 <h2 id="download-snapchat-data">📦 Downloading Your Snapchat Data and Moving its Folders</h2>
