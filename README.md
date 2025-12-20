@@ -390,7 +390,7 @@ Python 3.x.x
   1. Locate the downloaded file — it will usually be named **`exiftool(-k).exe`** on Windows or **`exiftool`** on Mac.
   2. If you see “(-k)” in the name, rename it to **`exiftool.exe`**.
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
-  3. Move the single `exiftool.exe` (Windows) or `exiftool` (Mac) file into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+  3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac standard package should already place it in /usr/local/bin for easy Terminal access
 
 - <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg</strong></a> — used to process and merge videos. </h4>
 
