@@ -49,7 +49,7 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
     - [🍏 macOS](#install-python-macos)
   - [2. Install Required Programs](#2-install-required-programs)
     - [🧾 Download ExifTool](#download-exiftool)
-    - [🧩 Download FFmpeg](#download-ffmpeg)
+    - [🧩 Download FFmpeg & FFprobe](#download-ffmpeg)
   - [3. Install Required Python Packages](#3-install-required-python-packages)
 - [🗂️ Final Folder Setup](#final-folder-setup)
 - [▶️ How to Run Script](#run-script)
@@ -392,17 +392,18 @@ Python 3.x.x
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
   3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac standard package should already place it in /usr/local/bin for easy Terminal access
 
-- <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg</strong></a> — used to process and merge videos. </h4>
+- <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg & FFmprobe</strong></a> — used to process and merge videos. </h4>
 
   1. Download the ZIP file for your operating system.
   2. Extract the ZIP file.
   3. Inside the extracted folder, open the **bin** (or **contents**) folder — you’ll find a file named **`ffmpeg.exe`** (Windows) or **`ffmpeg`** (Mac).
   4. Move that file into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
 
-  To verify FFmpeg is working, open **Terminal** or **PowerShell** and type:
+  To verify they are working, open **Terminal** or **PowerShell** and type:
 
   ```bash
   ffmpeg -version
+  ffprobe -version
   ```
 
   If version info appears, you’re ready to go ✅
@@ -427,7 +428,7 @@ Python 3.x.x
 >
 > ⚠️ **Important:**  
 > Don’t mix installs. Use **either** a global install **or** local executables in this folder — **not both**.  
-> If you use Chocolatey/Homebrew (global), **do not place `ffmpeg.exe` or `exiftool.exe` in the project folder**, or the script may fail to detect the correct one.
+> If you use Chocolatey/Homebrew (global), **do not place `exiftool.exe`, `ffmpeg.exe`, or `ffmprobe.exe` in the project folder**, or the script may fail to detect the correct one.
 
 ### 3. Install Required Python Packages
 
@@ -477,6 +478,7 @@ Snapchat_Memories_Tool/
 │
 ├── exiftool.exe                   (ExifTool executable for metadata)
 ├── ffmpeg.exe                     (FFmpeg executable for video processing)
+├── ffprobe.exe                    (FFmpeg executable for video processing)
 ├── snapchat_metadata.py           (main Python script)
 ├── README.md                      (directions)
 ├── LICENSE.txt                    (project license)
@@ -484,6 +486,7 @@ Snapchat_Memories_Tool/
 └── examples/                      (demonstration images for README.md)
 ```
 
+(Make sure to include ffmprobe as well)  
 ![Folder Layout](examples/File_Layout.png)
 ![Input Folder Layout](examples/Input_Layout.png)
 ![Folder Layout](examples/Output_Layout.png)
@@ -492,7 +495,7 @@ Snapchat_Memories_Tool/
 
 > ⚙️ **Note:**  
 > Most users should place both `ffmpeg.exe` and `exiftool.exe` in the main project folder (as shown above).  
-> However, if you’ve installed them globally using **Chocolatey** (Windows) or **Homebrew** (Mac),  
+> However, if you’ve installed them globally using **Chocolatey** (Windows), **Homebrew** (Mac), or the package already gets placed in /usr/local/bin (Mac)  
 > **do not also place copies in the folder** — the script will automatically detect your global installation.
 
 ---
