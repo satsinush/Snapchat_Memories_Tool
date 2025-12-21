@@ -392,12 +392,12 @@ Python 3.x.x
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
   3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac standard package should already place it in /usr/local/bin for easy Terminal access
 
-- <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg & FFmprobe</strong></a> — used to process and merge videos. </h4>
+- <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg & FFprobe</strong></a> — used to process and merge videos. </h4>
 
   1. Download the ZIP file for your operating system.
   2. Extract the ZIP file.
   3. Inside the extracted folder, open the **bin** (or **contents**) folder — you’ll find a file named **`ffmpeg.exe`** (Windows) or **`ffmpeg`** (Mac).
-  4. Move that file into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+  4. For windows move that files into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac move files into /usr/local/bin
 
   To verify they are working, open **Terminal** or **PowerShell** and type:
 
@@ -428,7 +428,7 @@ Python 3.x.x
 >
 > ⚠️ **Important:**  
 > Don’t mix installs. Use **either** a global install **or** local executables in this folder — **not both**.  
-> If you use Chocolatey/Homebrew (global), **do not place `exiftool.exe`, `ffmpeg.exe`, or `ffmprobe.exe` in the project folder**, or the script may fail to detect the correct one.
+> If you use Chocolatey/Homebrew (global), **do not place `exiftool.exe`, `ffmpeg.exe`, or `ffprobe.exe` in the project folder**, or the script may fail to detect the correct one.
 
 ### 3. Install Required Python Packages
 
@@ -476,9 +476,9 @@ Snapchat_Memories_Tool/
 │   ├── memories location time/    (Memories using GPS-local timezone)
 │   └── memories system time/      (Memories using system-local timezone)
 │
-├── exiftool.exe                   (ExifTool executable for metadata)
-├── ffmpeg.exe                     (FFmpeg executable for video processing)
-├── ffprobe.exe                    (FFmpeg executable for video processing)
+├── exiftool.exe   (for Windows)   (ExifTool executable for metadata)
+├── ffmpeg.exe     (for Windows)   (FFmpeg executable for video processing)
+├── ffprobe.exe    (for Windows)   (FFprobe executable for video processing)
 ├── snapchat_metadata.py           (main Python script)
 ├── README.md                      (directions)
 ├── LICENSE.txt                    (project license)
@@ -486,7 +486,8 @@ Snapchat_Memories_Tool/
 └── examples/                      (demonstration images for README.md)
 ```
 
-(Make sure to include ffmprobe as well)  
+(Image examples are for windows)  
+(Make sure to include ffprobe as well)  
 ![Folder Layout](examples/File_Layout.png)
 ![Input Folder Layout](examples/Input_Layout.png)
 ![Folder Layout](examples/Output_Layout.png)
