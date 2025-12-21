@@ -390,14 +390,16 @@ Python 3.x.x
   1. Locate the downloaded file — it will usually be named **`exiftool(-k).exe`** on Windows or **`exiftool`** on Mac.
   2. If you see “(-k)” in the name, rename it to **`exiftool.exe`**.
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
-  3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac standard package should already place it in /usr/local/bin for easy Terminal access
+  3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+     > ⚠️ For Mac standard package should already place it in `/usr/local/bin` for easy Terminal access
 
 - <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg & FFprobe</strong></a> — used to process and merge videos. </h4>
 
   1. Download the ZIP file for your operating system.
   2. Extract the ZIP file.
   3. Inside the extracted folder, open the **bin** (or **contents**) folder — you’ll find a file named **`ffmpeg.exe`** (Windows) or **`ffmpeg`** (Mac).
-  4. For windows move that files into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder). For Mac move files into /usr/local/bin
+  4. For windows move that files into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+     > ⚠️ For Mac move files into /usr/local/bin
 
   To verify they are working, open **Terminal** or **PowerShell** and type:
 
@@ -496,7 +498,7 @@ Snapchat_Memories_Tool/
 
 > ⚙️ **Note:**  
 > Most users should place both `ffmpeg.exe` and `exiftool.exe` in the main project folder (as shown above).  
-> However, if you’ve installed them globally using **Chocolatey** (Windows), **Homebrew** (Mac), or the package already gets placed in /usr/local/bin (Mac)  
+> However, if you’ve installed them globally using **Chocolatey** (Windows), **Homebrew** (Mac), or the package already gets placed in `/usr/local/bin` (Mac)  
 > **do not also place copies in the folder** — the script will automatically detect your global installation.
 
 ---
@@ -535,18 +537,18 @@ Snapchat_Memories_Tool/
 
 <h2 id="import-apple-photos">📤 Importing to Apple Photos</h2>
 
-After processing completes, use the files from the `output/memories_system_time/` folder when importing to Apple Photos to ensure timestamps and GPS data display correctly across all Apple devices.
+After processing completes, when importing to Apple Photos follow next steps to ensure timestamps and GPS data display correctly across all Apple devices.
 
 <h3 id="import-windows"> 🪟 Windows (via iCloud for Windows)</h3>
 
 1. Open the **iCloud Photos** folder in File Explorer.
-2. Copy or drag the processed files from `output/memories_system_time/` into the **iCloud Photos** folder in file explorer.
+2. Copy or drag the processed files from **`output/memories system time/`** into the **iCloud Photos** folder in file explorer.
 3. Wait for them to sync — they’ll appear in your iPhone’s Photos app with correct timestamps and GPS data and can be sorted by Date Captured.
 
 <h3 id="import-macos"> 🍏 macOS</h3>
 
 1. Open the **Photos** app.
-2. Select the processed files you want from the `output/memories_system_time/` folder and copy or drag them to the photos app.
+2. Select the processed files you want from the **`output/memories location time/`** folder and copy or drag them to the **Photos App**.
 3. These photos and vidoes will have the correct **date** and **map locations** automatically and can be sorted by Date Captured. They will also show up as a part of the **Import** section of photos.
 
 > **🕓 Note on time display:**  
@@ -570,8 +572,9 @@ After processing completes, use the files from the `output/memories_system_time/
 > **💡 Important Notes:**  
 > If uploaded files fail to appear, try **renaming** them or **clearing cached versions** in iCloud Photos.  
 > If a video’s preview image doesn’t appear right away, just wait — Photos will generate it shortly.  
-> For iCloud Photos Always upload from `output/memories_system_time/` — Apple Photos automatically adjusts for GPS timezones.  
-> _Using `memories_location_time/` can cause timestamps to appear double-adjusted._  
+> On Windows when using iCloud for Windows always upload from `output/memories system time/` — Apple Photos automatically adjusts for GPS timezones.  
+> On Mac when importing to Photos App always use `output/memories location time/`  
+> _Using the wrong one can cause timestamps to appear double-adjusted._  
 > Run the script and upload your files while your device is in the **same timezone**.  
 > _Uploading from a different timezone than where the script was run can shift timestamps by several hours._
 >
