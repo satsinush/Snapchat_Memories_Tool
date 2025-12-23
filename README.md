@@ -8,9 +8,7 @@ This tool rebuilds a user's Snapchat Memories and Chat Media, restoring pictures
 
 <h3 id="youtube-demo">🎬 YouTube Video Demonstration</h3>
 
-(Video not made yet)
-
-[![YouTube video](https://img.youtube.com/vi/YOUR_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID)
+[![YouTube video](https://img.youtube.com/vi/drLF8wYNDUA/maxresdefault.jpg)](https://www.youtube.com/watch?v=drLF8wYNDUA)
 
 ---
 
