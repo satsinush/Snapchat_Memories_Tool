@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import shutil
 import subprocess
@@ -9,6 +10,11 @@ from timezonefinder import TimezoneFinder
 from pathlib import Path
 from PIL import Image
 from typing import Optional
+
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 # Load metadata
@@ -212,6 +218,9 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
             "-XPKeywords=Snapchat",
             "-Subject=Snapchat",
             "-XMP-dc:Subject=Snapchat",
+            "-Keys:Keywords=Snapchat",
+            "-UserData:Keywords=Snapchat",
+            "-ItemList:Keyword=Snapchat",
         ]
         if gps_coords and gps_coords != "0.0, 0.0":
             lat, lon = gps_coords.split(", ")

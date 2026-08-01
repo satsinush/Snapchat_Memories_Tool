@@ -397,7 +397,8 @@ Python 3.x.x
   1. Locate the downloaded file — it will usually be named **`exiftool(-k).exe`** on Windows or **`exiftool`** on Mac.
   2. If you see “(-k)” in the name, rename it to **`exiftool.exe`**.
      > ⚠️ The “-k” flag keeps the window open and can interfere with automated processing.
-  3. Move the single `exiftool.exe` (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+  3. Move `exiftool.exe` and its accompanying **`exiftool_files/`** folder (Windows) into the **same folder** as `snapchat_metadata.py` (the `Snapchat_Memories_Tool/` folder).
+     > ⚠️ On Windows, `exiftool.exe` requires the `exiftool_files/` folder in the same directory to execute without missing DLL errors.
      > ⚠️ For Mac standard package should already place it in `/usr/local/bin` for easy Terminal access
 
 - <h4 id="download-ffmpeg"> 🧩 <a href="https://ffmpeg.org/download.html" target="_blank"><strong>Download FFmpeg & FFprobe</strong></a> — used to process and merge videos. </h4>
@@ -486,6 +487,7 @@ Snapchat_Memories_Tool/
 │   └── memories system time/      (Memories using system-local timezone)
 │
 ├── exiftool.exe   (for Windows)   (ExifTool executable for metadata)
+├── exiftool_files/ (for Windows)  (ExifTool supporting DLLs and Perl modules)
 ├── ffmpeg.exe     (for Windows)   (FFmpeg executable for video processing)
 ├── ffprobe.exe    (for Windows)   (FFprobe executable for video processing)
 ├── snapchat_metadata.py           (main Python script)

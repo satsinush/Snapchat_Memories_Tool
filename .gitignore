@@ -3,6 +3,7 @@ input/
 exiftool.exe
 ffmpeg.exe
 ffprobe.exe
+exiftool_files/
 
 # macOS system files
 .DS_Store

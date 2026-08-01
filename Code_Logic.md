@@ -228,13 +228,16 @@ Then if it's doing a full write (not just touching modified time), we also injec
             "-XPKeywords=Snapchat",
             "-Subject=Snapchat",
             "-XMP-dc:Subject=Snapchat",
+            "-Keys:Keywords=Snapchat",
+            "-UserData:Keywords=Snapchat",
+            "-ItemList:Keyword=Snapchat",
         ]
 ```
 
 Why so many tags?
 
 - Different apps read different tags:
-  - **Immich**, Google Photos, and Lightroom read `-Keywords=Snapchat` and `-XMP-dc:Subject=Snapchat` to automatically assign the **`Snapchat`** tag to uploaded files.
+  - **Immich**, Google Photos, and Lightroom read `-Keywords=Snapchat`, `-XMP-dc:Subject=Snapchat`, and QuickTime video keywords (`-Keys:Keywords`, `-UserData:Keywords`, `-ItemList:Keyword`) to automatically assign the **`Snapchat`** tag to both photo and MP4 video uploads.
   - iCloud Photos cares about EXIF DateTimeOriginal / QuickTime:CreateDate.
   - Windows File Explorer surfaces Microsoft:DateAcquired or DateTimeOriginal in the “Date” column.
 - By setting basically all of them to the same timestamp, everything lines up visually in iOS, iCloud web, Windows Explorer, and potentially any other photo application users may use.
@@ -640,11 +643,13 @@ def has_audio_stream(file_path: Path) -> bool:
 
 ```python
 def convert_to_mp3(input_file: Path, output_file: Path):
-    ffmpeg -i input -vn -acodec libmp3lame output.mp3
+    subprocess.run([
+        "ffmpeg", "-y", "-nostdin", "-i", str(input_file), "-vn", "-acodec", "libmp3lame", str(output_file)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 ```
 
-- Voice notes from chat_media often come out as `.mp4` “videos” with no video frames, just audio.
-- We turn those into `.mp3` files because that’s more convenient to listen to later.
+- Converts audio-only MP4 voice notes into `.mp3` files.
+- Uses `-y` (automatic overwrite approval) and `-nostdin` (disable standard input listening) so batch conversions run seamlessly without halting for Enter key presses.
 
 ---
 
