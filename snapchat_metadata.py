@@ -151,12 +151,64 @@ def format_dms(lat, lon):
     return f"{lat_dms}, {lon_dms}"
 
 
+class ExifToolRunner:
+    def __init__(self):
+        self.proc = None
+
+    def _start(self):
+        if self.proc is None or self.proc.poll() is not None:
+            try:
+                self.proc = subprocess.Popen(
+                    ["exiftool", "-stay_open", "True", "-@", "-"],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    bufsize=1,
+                )
+            except Exception:
+                self.proc = None
+
+    def execute(self, args):
+        self._start()
+        if not self.proc:
+            subprocess.run(["exiftool"] + args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
+
+        try:
+            for arg in args:
+                self.proc.stdin.write(f"{arg}\n")
+            self.proc.stdin.write("-execute\n")
+            self.proc.stdin.flush()
+
+            while True:
+                line = self.proc.stdout.readline()
+                if not line or "{ready}" in line:
+                    break
+        except Exception:
+            self.proc = None
+            subprocess.run(["exiftool"] + args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def close(self):
+        if self.proc and self.proc.poll() is None:
+            try:
+                self.proc.stdin.write("-stay_open\nFalse\n-execute\n")
+                self.proc.stdin.flush()
+                self.proc.communicate(timeout=2)
+            except Exception:
+                pass
+            self.proc = None
+
+
+_exiftool_runner = ExifToolRunner()
+
+
 def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
     current_time = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
+    cmd = ["exiftool", "-overwrite_original"]
+
     if not only_modified:
-        clean_cmd = [
-            "exiftool",
-            "-overwrite_original",
+        cmd += [
             "-tagsFromFile",
             "@",
             "-All:Time*=",
@@ -183,19 +235,15 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
             "-XPSubject=",
             "-XPTitle=",
             "-Microsoft:DateAcquired=",
-            str(file_path),
         ]
-        subprocess.run(clean_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    set_cmd = [
-        "exiftool",
-        "-overwrite_original",
+    cmd += [
         f"-FileCreateDate={current_time}",
         f"-FileModifyDate={current_time}",
     ]
 
     if not only_modified:
-        set_cmd += [
+        cmd += [
             f"-AllDates={date_time}",
             f"-MediaCreateDate={date_time}",
             f"-MediaModifyDate={date_time}",
@@ -225,7 +273,7 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
         if gps_coords and gps_coords != "0.0, 0.0":
             lat, lon = gps_coords.split(", ")
             dms = format_dms(float(lat), float(lon))
-            set_cmd.extend(
+            cmd.extend(
                 [
                     f"-GPSLatitude={lat}",
                     f"-GPSLongitude={lon}",
@@ -237,8 +285,8 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
                 ]
             )
 
-    set_cmd.append(str(file_path))
-    subprocess.run(set_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cmd.append(str(file_path))
+    _exiftool_runner.execute(cmd[1:])
 
     try:
         timestamp = datetime.strptime(date_time, "%Y:%m:%d %H:%M:%S").timestamp()
@@ -810,8 +858,11 @@ def process_chat_media():
 
 
 def main():
-    process_chat_media()
-    process_memories()
+    try:
+        process_chat_media()
+        process_memories()
+    finally:
+        _exiftool_runner.close()
 
 
 if __name__ == "__main__":
