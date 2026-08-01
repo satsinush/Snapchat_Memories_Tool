@@ -18,14 +18,101 @@ with open("input/memories_history.json", "r", encoding="utf-8") as f:
 tf = TimezoneFinder()
 system_timezone = get_localzone_name()
 
+# Load chat history metadata if available
+chat_metadata_map = {}
+chat_history_path = Path("input/chat_history.json")
+if chat_history_path.exists():
+    try:
+        with open(chat_history_path, "r", encoding="utf-8") as f:
+            chat_data = json.load(f)
+        for conv_key, messages in chat_data.items():
+            for msg in messages:
+                media_id_str = msg.get("Media IDs", "").strip()
+                if media_id_str:
+                    for mid in media_id_str.split(","):
+                        mid = mid.strip()
+                        if mid:
+                            chat_metadata_map[mid] = {
+                                "Created": msg.get("Created"),
+                                "From": msg.get("From"),
+                                "IsSender": msg.get("IsSender"),
+                                "Title": msg.get("Conversation Title"),
+                            }
+    except Exception as e:
+        print(f"Warning: Could not load chat_history.json: {e}")
+
+_filename_to_meta_cache = {}
+
+
+def _build_metadata_cache():
+    global _filename_to_meta_cache
+    if _filename_to_meta_cache:
+        return
+
+    from collections import defaultdict
+
+    mid_map = {}
+    meta_by_date = defaultdict(list)
+
+    for m in metadata:
+        link = m.get("Download Link", "") or m.get("Media Download Url", "")
+        if "mid=" in link:
+            mid = link.split("mid=")[1].split("&")[0]
+            mid_map[mid] = m
+        date_str = m.get("Date", "").split(" ")[0]
+        if date_str:
+            meta_by_date[date_str].append(m)
+
+    mem_dir = Path("input/memories")
+    if not mem_dir.exists():
+        return
+
+    all_main_files = sorted([f for f in mem_dir.iterdir() if "-main" in f.name])
+
+    for f in all_main_files:
+        matched = None
+        for mid, m in mid_map.items():
+            if mid in f.name:
+                matched = m
+                break
+
+        if not matched:
+            date_str = f.name.split("_")[0]
+            same_date_files = [x for x in all_main_files if x.name.startswith(date_str)]
+            same_date_meta = meta_by_date.get(date_str, [])
+
+            if len(same_date_meta) == 1:
+                matched = same_date_meta[0]
+            elif len(same_date_meta) > 1:
+                try:
+                    idx = same_date_files.index(f)
+                    matched = same_date_meta[idx if idx < len(same_date_meta) else 0]
+                except ValueError:
+                    matched = same_date_meta[0]
+
+        if matched:
+            _filename_to_meta_cache[f.name] = matched
+
 
 def get_metadata(filename):
+    _build_metadata_cache()
+    if filename in _filename_to_meta_cache:
+        return _filename_to_meta_cache[filename]
+
     for m in metadata:
-        if "mid=" in m["Download Link"]:
-            mid = m["Download Link"].split("mid=")[1].split("&")[0]
+        link = m.get("Download Link", "") or m.get("Media Download Url", "")
+        if "mid=" in link:
+            mid = link.split("mid=")[1].split("&")[0]
             if mid in filename:
                 return m
+
+    date_str = filename.split("_")[0]
+    for m in metadata:
+        if m.get("Date", "").startswith(date_str):
+            return m
+
     return None
+
 
 
 def adjust_time(utc_time, gps_coords, target_tz=None):
@@ -121,6 +208,10 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
             f"-DateTimeOriginal={date_time}",
             f"-DateTimeDigitized={date_time}",
             f"-Microsoft:DateAcquired={date_time}",
+            "-Keywords=Snapchat",
+            "-XPKeywords=Snapchat",
+            "-Subject=Snapchat",
+            "-XMP-dc:Subject=Snapchat",
         ]
         if gps_coords and gps_coords != "0.0, 0.0":
             lat, lon = gps_coords.split(", ")
@@ -219,6 +310,8 @@ def apply_overlay_landscape(base_path, overlay_path, output_path):
         subprocess.run(
             [
                 "ffmpeg",
+                "-y",
+                "-nostdin",
                 "-i", str(base_path),
                 "-i", str(overlay_path),
                 "-filter_complex",
@@ -230,7 +323,6 @@ def apply_overlay_landscape(base_path, overlay_path, output_path):
                 "-preset", "fast",
                 "-c:a", "copy",
                 "-movflags", "+faststart",
-                "-y",
                 str(output_path)
             ],
             stdout=subprocess.DEVNULL,
@@ -263,9 +355,10 @@ def apply_overlay_portrait(base_path, overlay_path, output_path):
         # Resize overlay to match video size
         resize_cmd = [
             "ffmpeg",
+            "-y",
+            "-nostdin",
             "-i", str(overlay_path),
             "-vf", f"scale={width}:{height}",
-            "-y",
             str(resized_overlay)
         ]
         subprocess.run(resize_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -273,12 +366,13 @@ def apply_overlay_portrait(base_path, overlay_path, output_path):
         # Apply overlay directly
         overlay_cmd = [
             "ffmpeg",
+            "-y",
+            "-nostdin",
             "-i", str(base_path),
             "-i", str(resized_overlay),
             "-filter_complex", "overlay=0:0",
             "-c:a", "copy",
             "-movflags", "+faststart",
-            "-y",
             str(output_path)
         ]
         subprocess.run(overlay_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -346,7 +440,7 @@ def merge_video_clips(groups, input_dir, output_dir_location, output_dir_system)
         print(f"   Final datetime → {gps_local_str}")
 
         subprocess.run(
-            ["ffmpeg", "-f", "concat", "-safe", "0", "-i", str(concat_list),
+            ["ffmpeg", "-y", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
              "-c", "copy", str(merged_path_location)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -365,7 +459,7 @@ def merge_video_clips(groups, input_dir, output_dir_location, output_dir_system)
                 print(f"   Overlay version added → {overlay_output_location.name}")
 
         subprocess.run(
-            ["ffmpeg", "-f", "concat", "-safe", "0", "-i", str(concat_list),
+            ["ffmpeg", "-y", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
              "-c", "copy", str(merged_path_system)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -560,11 +654,71 @@ def has_audio_stream(file_path: Path) -> bool:
 def convert_to_mp3(input_file: Path, output_file: Path):
     try:
         subprocess.run([
-            "ffmpeg", "-i", str(input_file), "-vn", "-acodec", "libmp3lame", str(output_file)
+            "ffmpeg", "-y", "-nostdin", "-i", str(input_file), "-vn", "-acodec", "libmp3lame", str(output_file)
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return output_file.exists()
     except Exception:
         return False
+
+
+def get_chat_media_datetime(file_path: Path) -> tuple:
+    date_str = file_path.name.split("_")[0]
+    mid = ""
+    parts = file_path.name.split("_", 1)
+    if len(parts) > 1:
+        mid = parts[1].rsplit(".", 1)[0]
+
+    extra_info = ""
+
+    # Priority 1: Match in chat_history.json
+    if mid and mid in chat_metadata_map:
+        entry = chat_metadata_map[mid]
+        utc_str = entry.get("Created")
+        if utc_str:
+            try:
+                dt_utc = datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S UTC").replace(
+                    tzinfo=pytz.utc
+                )
+                formatted = dt_utc.astimezone(
+                    pytz.timezone(system_timezone)
+                ).strftime("%Y:%m:%d %H:%M:%S")
+
+                info_parts = []
+                if entry.get("From"):
+                    sender = "You" if entry.get("IsSender") else entry["From"]
+                    info_parts.append(f"From: {sender}")
+                if entry.get("Title"):
+                    info_parts.append(f"Chat: {entry['Title']}")
+                if info_parts:
+                    extra_info = " (" + ", ".join(info_parts) + ")"
+
+                return formatted, extra_info
+            except Exception:
+                pass
+
+    # Priority 2: Fall back to file stat timestamp
+    try:
+        stat = file_path.stat()
+        for ts in (stat.st_ctime, stat.st_mtime):
+            if ts > 0:
+                dt = datetime.fromtimestamp(ts)
+                time_part = dt.strftime("%H:%M:%S")
+                return (
+                    datetime.strptime(
+                        f"{date_str} {time_part}", "%Y-%m-%d %H:%M:%S"
+                    ).strftime("%Y:%m:%d %H:%M:%S"),
+                    extra_info,
+                )
+    except Exception:
+        pass
+
+    # Priority 3: Fall back to 00:00:00
+    return (
+        datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S").strftime(
+            "%Y:%m:%d %H:%M:%S"
+        ),
+        extra_info,
+    )
 
 
 def process_chat_media():
@@ -588,6 +742,7 @@ def process_chat_media():
             continue
 
         date_str = file.name.split("_")[0]
+        formatted, extra_info = get_chat_media_datetime(file)
 
         # Process image files
         if file.suffix.lower() in [".jpg", ".jpeg"]:
@@ -598,9 +753,8 @@ def process_chat_media():
             new_name = f"{date_str}_chat_media_{suffix}{file.suffix.lower()}"
             new_file = output_dir / new_name
             shutil.copy2(file, new_file)
-            formatted = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S").strftime("%Y:%m:%d %H:%M:%S")
             update_metadata(new_file, formatted)
-            print(f"\n→  Processing chat_media: {file.name}")
+            print(f"\n→  Processing chat_media: {file.name}{extra_info}")
             print(f"   Final datetime → {formatted}")
             print(f"   File name updated → {new_name}")
             print(f"   Added to → chat media")
@@ -614,8 +768,6 @@ def process_chat_media():
                 print(f"\n→  Skipping invalid mp4 (no audio/video) → {file.name}")
                 continue
 
-            formatted = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S").strftime("%Y:%m:%d %H:%M:%S")
-
             if has_video:
                 date_counter.setdefault(date_str, 0)
                 date_counter[date_str] += 1
@@ -625,7 +777,7 @@ def process_chat_media():
                 new_file = output_dir / new_name
                 shutil.copy2(file, new_file)
                 update_metadata(new_file, formatted)
-                print(f"\n→  Processing chat_media: {file.name}")
+                print(f"\n→  Processing chat_media: {file.name}{extra_info}")
                 print(f"   Final datetime → {formatted}")
                 print(f"   File name updated → {new_name}")
                 print(f"   Added to → chat media")
@@ -640,7 +792,7 @@ def process_chat_media():
                 success = convert_to_mp3(file, new_file)
                 if success:
                     update_metadata(new_file, formatted)
-                    print(f"\n→  Converted voice message to mp3 → {file.name}")
+                    print(f"\n→  Converted voice message to mp3 → {file.name}{extra_info}")
                     print(f"   Final datetime → {formatted}")
                     print(f"   File name updated → {new_name}")
                     print(f"   Added to → chat media voice messages")
