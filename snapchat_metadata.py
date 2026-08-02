@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -26,6 +27,7 @@ system_timezone = get_localzone_name()
 
 # Load chat history metadata if available
 chat_metadata_map = {}
+chat_history_list = []
 chat_history_path = Path("input/chat_history.json")
 if chat_history_path.exists():
     try:
@@ -33,19 +35,44 @@ if chat_history_path.exists():
             chat_data = json.load(f)
         for conv_key, messages in chat_data.items():
             for msg in messages:
+                chat_entry = {
+                    "Created": msg.get("Created"),
+                    "From": msg.get("From"),
+                    "IsSender": msg.get("IsSender"),
+                    "Title": msg.get("Conversation Title"),
+                    "Media Type": msg.get("Media Type"),
+                }
+                chat_history_list.append(chat_entry)
                 media_id_str = msg.get("Media IDs", "").strip()
                 if media_id_str:
-                    for mid in media_id_str.split(","):
+                    for mid in re.split(r"[,|;]", media_id_str):
                         mid = mid.strip()
                         if mid:
-                            chat_metadata_map[mid] = {
-                                "Created": msg.get("Created"),
-                                "From": msg.get("From"),
-                                "IsSender": msg.get("IsSender"),
-                                "Title": msg.get("Conversation Title"),
-                            }
+                            chat_metadata_map[mid] = chat_entry
     except Exception as e:
         print(f"Warning: Could not load chat_history.json: {e}")
+
+# Load snap history metadata if available
+snap_metadata_list = []
+snap_history_path = Path("input/snap_history.json")
+if snap_history_path.exists():
+    try:
+        with open(snap_history_path, "r", encoding="utf-8") as f:
+            snap_data = json.load(f)
+        for conv_key, snaps in snap_data.items():
+            for s in snaps:
+                snap_metadata_list.append(
+                    {
+                        "Created": s.get("Created"),
+                        "From": s.get("From"),
+                        "IsSender": s.get("IsSender"),
+                        "Title": s.get("Conversation Title"),
+                        "Media Type": s.get("Media Type"),
+                        "Microseconds": s.get("Created(microseconds)"),
+                    }
+                )
+    except Exception as e:
+        print(f"Warning: Could not load snap_history.json: {e}")
 
 _filename_to_meta_cache = {}
 
@@ -203,7 +230,12 @@ class ExifToolRunner:
 _exiftool_runner = ExifToolRunner()
 
 
-def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
+def update_metadata(file_path, date_time, gps_coords=None, only_modified=False, tags=None):
+    if not tags:
+        tags = ["Snapchat"]
+    elif "Snapchat" not in tags:
+        tags = ["Snapchat"] + list(tags)
+
     current_time = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
     cmd = ["exiftool", "-overwrite_original"]
 
@@ -262,14 +294,21 @@ def update_metadata(file_path, date_time, gps_coords=None, only_modified=False):
             f"-DateTimeOriginal={date_time}",
             f"-DateTimeDigitized={date_time}",
             f"-Microsoft:DateAcquired={date_time}",
-            "-Keywords=Snapchat",
-            "-XPKeywords=Snapchat",
-            "-Subject=Snapchat",
-            "-XMP-dc:Subject=Snapchat",
-            "-Keys:Keywords=Snapchat",
-            "-UserData:Keywords=Snapchat",
-            "-ItemList:Keyword=Snapchat",
         ]
+
+        for tag in tags:
+            cmd.append(f"-Keywords={tag}")
+            cmd.append(f"-Subject={tag}")
+            cmd.append(f"-XMP-dc:Subject={tag}")
+
+        cmd.append(f"-XPKeywords={'; '.join(tags)}")
+        cmd.append(f"-Keys:Keywords={', '.join(tags)}")
+        cmd.append(f"-UserData:Keywords={', '.join(tags)}")
+        cmd.append(f"-ItemList:Keyword={', '.join(tags)}")
+
+        if len(tags) > 1:
+            cmd.append(f"-XMP-lr:HierarchicalSubject={'|'.join(tags)}")
+
         if gps_coords and gps_coords != "0.0, 0.0":
             lat, lon = gps_coords.split(", ")
             dms = format_dms(float(lat), float(lon))
@@ -444,6 +483,45 @@ def apply_overlay_portrait(base_path, overlay_path, output_path):
         return False
 
 
+def concat_video_files(clips: list, output_path: Path) -> bool:
+    concat_list = output_path.parent / f"temp_concat_{output_path.stem}.txt"
+    try:
+        with open(concat_list, "w", encoding="utf-8") as f:
+            for clip in clips:
+                f.write(f"file '{clip.resolve().as_posix()}'\n")
+        res = subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-nostdin",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(concat_list),
+                "-c",
+                "copy",
+                str(output_path),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            print(f"   [Error] ffmpeg concat failed: {res.stderr.strip()}")
+            return False
+        return True
+    except Exception as e:
+        print(f"   [Error] ffmpeg concat exception: {e}")
+        return False
+    finally:
+        if concat_list.exists():
+            try:
+                concat_list.unlink()
+            except Exception:
+                pass
+
+
 def merge_video_clips(groups, input_dir, output_dir_location, output_dir_system):
     used_filenames = {}
 
@@ -480,28 +558,7 @@ def merge_video_clips(groups, input_dir, output_dir_location, output_dir_system)
         merged_path_location = output_dir_location / f"{filename}.mp4"
         merged_path_system = output_dir_system / f"{filename}.mp4"
 
-        concat_list = Path("temp_inputs.txt")
-        with open(concat_list, "w") as f:
-            for clip in group:
-                f.write(f"file '{clip.as_posix()}'\n")
-
-        print(f"\n→  Merging videos (location, date, and time match): {[clip.name for clip in group]}")
-
-        if gps_coords and gps_coords != "0.0, 0.0":
-            print(f"   Location → ({gps_coords})")
-            if gps_tz:
-                print(f"   Timezone used → {gps_tz}")
-        else:
-            print("   Location → none found")
-            print(f"   System timezone used → {system_timezone}")
-        print(f"   Final datetime → {gps_local_str}")
-
-        subprocess.run(
-            ["ffmpeg", "-y", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
-             "-c", "copy", str(merged_path_location)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        concat_video_files(group, merged_path_location)
         update_metadata(merged_path_location, gps_local_str, gps_coords)
         print(f"   File name updated → {filename}.mp4")
         print(f"   Added to → memories location time")
@@ -515,12 +572,7 @@ def merge_video_clips(groups, input_dir, output_dir_location, output_dir_system)
                 update_metadata(overlay_output_location, gps_local_str, gps_coords)
                 print(f"   Overlay version added → {overlay_output_location.name}")
 
-        subprocess.run(
-            ["ffmpeg", "-y", "-nostdin", "-f", "concat", "-safe", "0", "-i", str(concat_list),
-             "-c", "copy", str(merged_path_system)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        concat_video_files(group, merged_path_system)
         update_metadata(merged_path_system, system_time_str, gps_coords)
         print(f"\n→  Processing copy {filename}.mp4")
         print(f"   System timezone used → {system_timezone}")
@@ -718,64 +770,99 @@ def convert_to_mp3(input_file: Path, output_file: Path):
         return False
 
 
-def get_chat_media_datetime(file_path: Path) -> tuple:
+def get_chat_media_info(file_path: Path) -> tuple:
     date_str = file_path.name.split("_")[0]
     mid = ""
     parts = file_path.name.split("_", 1)
     if len(parts) > 1:
         mid = parts[1].rsplit(".", 1)[0]
 
-    extra_info = ""
+    matched_entry = None
 
-    # Priority 1: Match in chat_history.json
+    # Priority 1: Match mid in chat_metadata_map
     if mid and mid in chat_metadata_map:
-        entry = chat_metadata_map[mid]
-        utc_str = entry.get("Created")
+        matched_entry = chat_metadata_map[mid]
+
+    # Priority 2: Match in snap_metadata_list by date_str
+    if not matched_entry and snap_metadata_list:
+        candidates = [
+            s for s in snap_metadata_list if s.get("Created", "").startswith(date_str)
+        ]
+        if candidates:
+            matched_entry = candidates[0]
+
+    # Priority 3: Match in chat_history_list by date_str
+    if not matched_entry and chat_history_list:
+        candidates = [
+            c
+            for c in chat_history_list
+            if c.get("Created", "").startswith(date_str)
+            and c.get("Media Type") in ["MEDIA", "VIDEO", "IMAGE", "NOTE"]
+        ]
+        if candidates:
+            matched_entry = candidates[0]
+
+    extra_info = ""
+    tags = ["Snapchat"]
+    dt_obj = None
+
+    if matched_entry:
+        utc_str = matched_entry.get("Created")
         if utc_str:
             try:
                 dt_utc = datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S UTC").replace(
                     tzinfo=pytz.utc
                 )
+                dt_obj = dt_utc
                 formatted = dt_utc.astimezone(
                     pytz.timezone(system_timezone)
                 ).strftime("%Y:%m:%d %H:%M:%S")
 
                 info_parts = []
-                if entry.get("From"):
-                    sender = "You" if entry.get("IsSender") else entry["From"]
+                if matched_entry.get("From"):
+                    sender = (
+                        "You"
+                        if matched_entry.get("IsSender")
+                        else matched_entry["From"]
+                    )
                     info_parts.append(f"From: {sender}")
-                if entry.get("Title"):
-                    info_parts.append(f"Chat: {entry['Title']}")
+                if matched_entry.get("Title"):
+                    info_parts.append(f"Chat: {matched_entry['Title']}")
                 if info_parts:
                     extra_info = " (" + ", ".join(info_parts) + ")"
 
-                return formatted, extra_info
+                is_sender = matched_entry.get("IsSender")
+                if is_sender is not None:
+                    tags.append("Sent" if is_sender else "Received")
+
+                chat_title = matched_entry.get("Title") or matched_entry.get("From")
+                if chat_title:
+                    tags.append(chat_title)
+
+                return formatted, extra_info, tags, dt_obj
             except Exception:
                 pass
 
-    # Priority 2: Fall back to file stat timestamp
+    # Priority 4: Fall back to file stat timestamp
     try:
         stat = file_path.stat()
-        for ts in (stat.st_ctime, stat.st_mtime):
+        for ts in (stat.st_mtime, stat.st_ctime):
             if ts > 0:
                 dt = datetime.fromtimestamp(ts)
+                dt_obj = pytz.timezone(system_timezone).localize(dt)
                 time_part = dt.strftime("%H:%M:%S")
-                return (
-                    datetime.strptime(
-                        f"{date_str} {time_part}", "%Y-%m-%d %H:%M:%S"
-                    ).strftime("%Y:%m:%d %H:%M:%S"),
-                    extra_info,
-                )
+                formatted = datetime.strptime(
+                    f"{date_str} {time_part}", "%Y-%m-%d %H:%M:%S"
+                ).strftime("%Y:%m:%d %H:%M:%S")
+                return formatted, extra_info, tags, dt_obj
     except Exception:
         pass
 
-    # Priority 3: Fall back to 00:00:00
-    return (
-        datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S").strftime(
-            "%Y:%m:%d %H:%M:%S"
-        ),
-        extra_info,
-    )
+    # Priority 5: Fall back to 00:00:00
+    dt_fallback = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
+    dt_obj = pytz.timezone(system_timezone).localize(dt_fallback)
+    formatted = dt_fallback.strftime("%Y:%m:%d %H:%M:%S")
+    return formatted, extra_info, tags, dt_obj
 
 
 def process_chat_media():
@@ -786,6 +873,10 @@ def process_chat_media():
     voice_dir.mkdir(parents=True, exist_ok=True)
     date_counter = {}
     voice_counter = {}
+
+    images = []
+    videos = []
+    voice_messages = []
 
     for file in sorted(input_dir.iterdir()):
         # Skip unsupported file types
@@ -798,25 +889,8 @@ def process_chat_media():
             print(f"\n→  Skipping thumbnail file → {file.name}")
             continue
 
-        date_str = file.name.split("_")[0]
-        formatted, extra_info = get_chat_media_datetime(file)
-
-        # Process image files
         if file.suffix.lower() in [".jpg", ".jpeg"]:
-            date_counter.setdefault(date_str, 0)
-            date_counter[date_str] += 1
-            suffix = date_counter[date_str]
-
-            new_name = f"{date_str}_chat_media_{suffix}{file.suffix.lower()}"
-            new_file = output_dir / new_name
-            shutil.copy2(file, new_file)
-            update_metadata(new_file, formatted)
-            print(f"\n→  Processing chat_media: {file.name}{extra_info}")
-            print(f"   Final datetime → {formatted}")
-            print(f"   File name updated → {new_name}")
-            print(f"   Added to → chat media")
-
-        # Process video/audio files
+            images.append(file)
         elif file.suffix.lower() == ".mp4":
             has_video = has_video_stream(file)
             has_audio = has_audio_stream(file)
@@ -826,35 +900,137 @@ def process_chat_media():
                 continue
 
             if has_video:
-                date_counter.setdefault(date_str, 0)
-                date_counter[date_str] += 1
-                suffix = date_counter[date_str]
-
-                new_name = f"{date_str}_chat_media_{suffix}.mp4"
-                new_file = output_dir / new_name
-                shutil.copy2(file, new_file)
-                update_metadata(new_file, formatted)
-                print(f"\n→  Processing chat_media: {file.name}{extra_info}")
-                print(f"   Final datetime → {formatted}")
-                print(f"   File name updated → {new_name}")
-                print(f"   Added to → chat media")
-
+                videos.append(file)
             elif has_audio:
-                voice_counter.setdefault(date_str, 0)
-                voice_counter[date_str] += 1
-                suffix = voice_counter[date_str]
+                voice_messages.append(file)
 
-                new_name = f"{date_str}_voice_message_{suffix}.mp3"
-                new_file = voice_dir / new_name
-                success = convert_to_mp3(file, new_file)
-                if success:
-                    update_metadata(new_file, formatted)
-                    print(f"\n→  Converted voice message to mp3 → {file.name}{extra_info}")
-                    print(f"   Final datetime → {formatted}")
-                    print(f"   File name updated → {new_name}")
-                    print(f"   Added to → chat media voice messages")
-                else:
-                    print(f"→  Failed to convert voice message → {file.name}")
+    # Process images
+    for file in images:
+        date_str = file.name.split("_")[0]
+        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+
+        date_counter.setdefault(date_str, 0)
+        date_counter[date_str] += 1
+        suffix = date_counter[date_str]
+
+        new_name = f"{date_str}_chat_media_{suffix}{file.suffix.lower()}"
+        new_file = output_dir / new_name
+        shutil.copy2(file, new_file)
+        update_metadata(new_file, formatted, tags=tags)
+        print(f"\n→  Processing chat_media: {file.name}{extra_info}")
+        print(f"   Final datetime → {formatted}")
+        print(f"   Tags → {tags}")
+        print(f"   File name updated → {new_name}")
+        print(f"   Added to → chat media")
+
+    # Process voice messages
+    for file in voice_messages:
+        date_str = file.name.split("_")[0]
+        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+
+        voice_counter.setdefault(date_str, 0)
+        voice_counter[date_str] += 1
+        suffix = voice_counter[date_str]
+
+        new_name = f"{date_str}_voice_message_{suffix}.mp3"
+        new_file = voice_dir / new_name
+        success = convert_to_mp3(file, new_file)
+        if success:
+            update_metadata(new_file, formatted, tags=tags)
+            print(f"\n→  Converted voice message to mp3 → {file.name}{extra_info}")
+            print(f"   Final datetime → {formatted}")
+            print(f"   Tags → {tags}")
+            print(f"   File name updated → {new_name}")
+            print(f"   Added to → chat media voice messages")
+        else:
+            print(f"→  Failed to convert voice message → {file.name}")
+
+    # Process & Merge videos
+    video_infos = []
+    for file in videos:
+        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+        video_infos.append(
+            {
+                "file": file,
+                "formatted": formatted,
+                "extra_info": extra_info,
+                "tags": tags,
+                "dt_obj": dt_obj,
+                "date_str": file.name.split("_")[0],
+            }
+        )
+
+    video_infos.sort(key=lambda x: (x["dt_obj"], x["file"].name))
+
+    groups = []
+    current_group = []
+
+    for v_info in video_infos:
+        if not current_group:
+            current_group.append(v_info)
+            continue
+
+        prev_info = current_group[-1]
+        prev_dt = prev_info["dt_obj"]
+        curr_dt = v_info["dt_obj"]
+
+        time_diff = (
+            abs((curr_dt - prev_dt).total_seconds()) if (prev_dt and curr_dt) else 999
+        )
+        same_tags = prev_info["tags"] == v_info["tags"]
+        same_date = prev_info["date_str"] == v_info["date_str"]
+
+        if same_date and same_tags and time_diff <= 15:
+            current_group.append(v_info)
+        else:
+            groups.append(current_group)
+            current_group = [v_info]
+
+    if current_group:
+        groups.append(current_group)
+
+    for group in groups:
+        first_v = group[0]
+        date_str = first_v["date_str"]
+        date_counter.setdefault(date_str, 0)
+        date_counter[date_str] += 1
+        suffix = date_counter[date_str]
+        new_name = f"{date_str}_chat_media_{suffix}.mp4"
+        output_file = output_dir / new_name
+
+        if len(group) > 1:
+            print(
+                f"\n→  Merging chat media videos: {[v['file'].name for v in group]}{first_v['extra_info']}"
+            )
+            clips_to_merge = [v["file"] for v in group]
+            success = concat_video_files(clips_to_merge, output_file)
+            if success:
+                update_metadata(output_file, first_v["formatted"], tags=first_v["tags"])
+                print(f"   Final datetime → {first_v['formatted']}")
+                print(f"   Tags → {first_v['tags']}")
+                print(f"   Merged video saved → {new_name}")
+                print(f"   Added to → chat media")
+            else:
+                print(f"   [Warning] Video merge failed. Copying clips individually...")
+                date_counter[date_str] -= 1
+                for v in group:
+                    date_counter[date_str] += 1
+                    indiv_suffix = date_counter[date_str]
+                    indiv_name = f"{date_str}_chat_media_{indiv_suffix}.mp4"
+                    indiv_out = output_dir / indiv_name
+                    shutil.copy2(v["file"], indiv_out)
+                    update_metadata(indiv_out, v["formatted"], tags=v["tags"])
+                    print(f"   Fallback saved individual clip → {indiv_name}")
+        else:
+            shutil.copy2(first_v["file"], output_file)
+            update_metadata(output_file, first_v["formatted"], tags=first_v["tags"])
+            print(
+                f"\n→  Processing chat_media: {first_v['file'].name}{first_v['extra_info']}"
+            )
+            print(f"   Final datetime → {first_v['formatted']}")
+            print(f"   Tags → {first_v['tags']}")
+            print(f"   File name updated → {new_name}")
+            print(f"   Added to → chat media")
 
 
 def main():
