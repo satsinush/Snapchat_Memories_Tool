@@ -489,6 +489,8 @@ def concat_video_files(clips: list, output_path: Path) -> bool:
         with open(concat_list, "w", encoding="utf-8") as f:
             for clip in clips:
                 f.write(f"file '{clip.resolve().as_posix()}'\n")
+
+        # Try re-encoding first to ensure clean timestamps and prevent video corruption
         res = subprocess.run(
             [
                 "ffmpeg",
@@ -500,13 +502,41 @@ def concat_video_files(clips: list, output_path: Path) -> bool:
                 "0",
                 "-i",
                 str(concat_list),
-                "-c",
-                "copy",
+                "-c:v",
+                "libx264",
+                "-crf",
+                "18",
+                "-preset",
+                "fast",
+                "-c:a",
+                "aac",
+                "-movflags",
+                "+faststart",
                 str(output_path),
             ],
             capture_output=True,
             text=True,
         )
+        if not output_path.exists() or output_path.stat().st_size == 0:
+            # Fallback to copy stream if re-encoding fails
+            res = subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-nostdin",
+                    "-f",
+                    "concat",
+                    "-safe",
+                    "0",
+                    "-i",
+                    str(concat_list),
+                    "-c",
+                    "copy",
+                    str(output_path),
+                ],
+                capture_output=True,
+                text=True,
+            )
         if not output_path.exists() or output_path.stat().st_size == 0:
             print(f"   [Error] ffmpeg concat failed: {res.stderr.strip()}")
             return False
@@ -770,6 +800,65 @@ def convert_to_mp3(input_file: Path, output_file: Path):
         return False
 
 
+def parse_utc_timestamp(date_str: str) -> Optional[datetime]:
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S UTC").replace(
+            tzinfo=pytz.utc
+        )
+    except Exception:
+        return None
+
+
+def get_video_creation_time(file_path: Path) -> Optional[datetime]:
+    if file_path.suffix.lower() != ".mp4":
+        return None
+    try:
+        cmd = [
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            str(file_path),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            tags = data.get("format", {}).get("tags", {})
+            ct_str = tags.get("creation_time") or tags.get("CREATION_TIME")
+            if ct_str:
+                clean_str = ct_str.rstrip("Z").split(".")[0]
+                return datetime.strptime(clean_str, "%Y-%m-%dT%H:%M:%S").replace(
+                    tzinfo=pytz.utc
+                )
+    except Exception:
+        pass
+    return None
+
+
+def get_video_duration(file_path: Path) -> float:
+    if file_path.suffix.lower() not in [".mp4", ".mov"]:
+        return 0.0
+    try:
+        cmd = [
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            str(file_path),
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            dur_str = json.loads(result.stdout).get("format", {}).get("duration", "0")
+            return float(dur_str)
+    except Exception:
+        pass
+    return 0.0
+
+
 def get_chat_media_info(file_path: Path) -> tuple:
     date_str = file_path.name.split("_")[0]
     mid = ""
@@ -777,76 +866,143 @@ def get_chat_media_info(file_path: Path) -> tuple:
     if len(parts) > 1:
         mid = parts[1].rsplit(".", 1)[0]
 
+    internal_ct = get_video_creation_time(file_path)
+    file_ts = internal_ct.timestamp() if internal_ct else 0.0
+
+    if file_ts == 0.0:
+        try:
+            stat = file_path.stat()
+            for ts in (stat.st_ctime, stat.st_mtime):
+                if ts > 0:
+                    file_ts = ts
+                    break
+        except Exception:
+            pass
+
     matched_entry = None
 
     # Priority 1: Match mid in chat_metadata_map
     if mid and mid in chat_metadata_map:
         matched_entry = chat_metadata_map[mid]
 
+    # Helper function to find best matching candidate close in timestamp
+    def find_best_candidate(candidates_list):
+        if not candidates_list:
+            return None
+        # If all candidates have identical From and Title, pick first
+        senders = {c.get("From") for c in candidates_list if c.get("From")}
+        titles = {c.get("Title") for c in candidates_list if c.get("Title")}
+        if len(senders) <= 1 and len(titles) <= 1:
+            return candidates_list[0]
+
+        # Otherwise find candidate closest in timestamp to file_ts
+        best = None
+        best_diff = float("inf")
+        for c in candidates_list:
+            utc_dt = parse_utc_timestamp(c.get("Created", ""))
+            if utc_dt:
+                c_ts = utc_dt.timestamp()
+                diff = abs(c_ts - file_ts) if file_ts > 0 else 0
+                if diff < best_diff:
+                    best_diff = diff
+                    best = c
+        # Only accept if diff is reasonable (<= 4 hours)
+        if best and (file_ts == 0 or best_diff <= 14400):
+            return best
+        return None
+
+    is_video = file_path.suffix.lower() == ".mp4"
+
     # Priority 2: Match in snap_metadata_list by date_str
     if not matched_entry and snap_metadata_list:
-        candidates = [
-            s for s in snap_metadata_list if s.get("Created", "").startswith(date_str)
-        ]
-        if candidates:
-            matched_entry = candidates[0]
+        if is_video:
+            candidates = [
+                s
+                for s in snap_metadata_list
+                if s.get("Created", "").startswith(date_str)
+                and s.get("Media Type") in ["VIDEO", "MEDIA", None]
+            ]
+        else:
+            candidates = [
+                s
+                for s in snap_metadata_list
+                if s.get("Created", "").startswith(date_str)
+                and s.get("Media Type") in ["IMAGE", "MEDIA", None]
+            ]
+        matched_entry = find_best_candidate(candidates)
 
     # Priority 3: Match in chat_history_list by date_str
     if not matched_entry and chat_history_list:
-        candidates = [
-            c
-            for c in chat_history_list
-            if c.get("Created", "").startswith(date_str)
-            and c.get("Media Type") in ["MEDIA", "VIDEO", "IMAGE", "NOTE"]
-        ]
-        if candidates:
-            matched_entry = candidates[0]
+        if is_video:
+            candidates = [
+                c
+                for c in chat_history_list
+                if c.get("Created", "").startswith(date_str)
+                and c.get("Media Type") in ["VIDEO", "MEDIA", None]
+            ]
+        else:
+            candidates = [
+                c
+                for c in chat_history_list
+                if c.get("Created", "").startswith(date_str)
+                and c.get("Media Type") in ["IMAGE", "MEDIA", "NOTE", None]
+            ]
+        matched_entry = find_best_candidate(candidates)
 
     extra_info = ""
     tags = ["Snapchat"]
     dt_obj = None
+    sort_key_ts = file_ts * 1000000.0
 
     if matched_entry:
         utc_str = matched_entry.get("Created")
         if utc_str:
             try:
-                dt_utc = datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S UTC").replace(
-                    tzinfo=pytz.utc
-                )
-                dt_obj = dt_utc
-                formatted = dt_utc.astimezone(
-                    pytz.timezone(system_timezone)
-                ).strftime("%Y:%m:%d %H:%M:%S")
+                dt_utc = parse_utc_timestamp(utc_str)
+                if dt_utc:
+                    dt_obj = dt_utc
+                    formatted = dt_utc.astimezone(
+                        pytz.timezone(system_timezone)
+                    ).strftime("%Y:%m:%d %H:%M:%S")
 
-                info_parts = []
-                if matched_entry.get("From"):
-                    sender = (
-                        "You"
-                        if matched_entry.get("IsSender")
-                        else matched_entry["From"]
+                    if internal_ct:
+                        sort_key_ts = internal_ct.timestamp() * 1000000.0
+                    elif matched_entry.get("Microseconds"):
+                        sort_key_ts = float(matched_entry["Microseconds"])
+                    else:
+                        sort_key_ts = dt_utc.timestamp() * 1000000.0
+
+                    info_parts = []
+                    if matched_entry.get("From"):
+                        sender = (
+                            "You"
+                            if matched_entry.get("IsSender")
+                            else matched_entry["From"]
+                        )
+                        info_parts.append(f"From: {sender}")
+                    if matched_entry.get("Title"):
+                        info_parts.append(f"Chat: {matched_entry['Title']}")
+                    if info_parts:
+                        extra_info = " (" + ", ".join(info_parts) + ")"
+
+                    is_sender = matched_entry.get("IsSender")
+                    if is_sender is not None:
+                        tags.append("Sent" if is_sender else "Received")
+
+                    chat_title = matched_entry.get("Title") or matched_entry.get(
+                        "From"
                     )
-                    info_parts.append(f"From: {sender}")
-                if matched_entry.get("Title"):
-                    info_parts.append(f"Chat: {matched_entry['Title']}")
-                if info_parts:
-                    extra_info = " (" + ", ".join(info_parts) + ")"
+                    if chat_title:
+                        tags.append(chat_title)
 
-                is_sender = matched_entry.get("IsSender")
-                if is_sender is not None:
-                    tags.append("Sent" if is_sender else "Received")
-
-                chat_title = matched_entry.get("Title") or matched_entry.get("From")
-                if chat_title:
-                    tags.append(chat_title)
-
-                return formatted, extra_info, tags, dt_obj
+                    return formatted, extra_info, tags, dt_obj, sort_key_ts
             except Exception:
                 pass
 
     # Priority 4: Fall back to file stat timestamp
     try:
         stat = file_path.stat()
-        for ts in (stat.st_mtime, stat.st_ctime):
+        for ts in (stat.st_ctime, stat.st_mtime):
             if ts > 0:
                 dt = datetime.fromtimestamp(ts)
                 dt_obj = pytz.timezone(system_timezone).localize(dt)
@@ -854,7 +1010,8 @@ def get_chat_media_info(file_path: Path) -> tuple:
                 formatted = datetime.strptime(
                     f"{date_str} {time_part}", "%Y-%m-%d %H:%M:%S"
                 ).strftime("%Y:%m:%d %H:%M:%S")
-                return formatted, extra_info, tags, dt_obj
+                sort_key_ts = ts * 1000000.0
+                return formatted, extra_info, tags, dt_obj, sort_key_ts
     except Exception:
         pass
 
@@ -862,7 +1019,7 @@ def get_chat_media_info(file_path: Path) -> tuple:
     dt_fallback = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
     dt_obj = pytz.timezone(system_timezone).localize(dt_fallback)
     formatted = dt_fallback.strftime("%Y:%m:%d %H:%M:%S")
-    return formatted, extra_info, tags, dt_obj
+    return formatted, extra_info, tags, dt_obj, sort_key_ts
 
 
 def process_chat_media():
@@ -878,9 +1035,12 @@ def process_chat_media():
     videos = []
     voice_messages = []
 
+    image_exts = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+    video_exts = [".mp4", ".mov"]
+
     for file in sorted(input_dir.iterdir()):
         # Skip unsupported file types
-        if file.suffix.lower() not in [".jpg", ".jpeg", ".mp4"]:
+        if file.suffix.lower() not in image_exts + video_exts:
             print(f"\n→  Skipping unsupported file type → {file.name}")
             continue
 
@@ -889,14 +1049,14 @@ def process_chat_media():
             print(f"\n→  Skipping thumbnail file → {file.name}")
             continue
 
-        if file.suffix.lower() in [".jpg", ".jpeg"]:
+        if file.suffix.lower() in image_exts:
             images.append(file)
-        elif file.suffix.lower() == ".mp4":
+        elif file.suffix.lower() in video_exts:
             has_video = has_video_stream(file)
             has_audio = has_audio_stream(file)
 
             if not has_video and not has_audio:
-                print(f"\n→  Skipping invalid mp4 (no audio/video) → {file.name}")
+                print(f"\n→  Skipping invalid video (no audio/video) → {file.name}")
                 continue
 
             if has_video:
@@ -907,7 +1067,7 @@ def process_chat_media():
     # Process images
     for file in images:
         date_str = file.name.split("_")[0]
-        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+        formatted, extra_info, tags, dt_obj, sort_key_ts = get_chat_media_info(file)
 
         date_counter.setdefault(date_str, 0)
         date_counter[date_str] += 1
@@ -926,7 +1086,7 @@ def process_chat_media():
     # Process voice messages
     for file in voice_messages:
         date_str = file.name.split("_")[0]
-        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+        formatted, extra_info, tags, dt_obj, sort_key_ts = get_chat_media_info(file)
 
         voice_counter.setdefault(date_str, 0)
         voice_counter[date_str] += 1
@@ -948,7 +1108,10 @@ def process_chat_media():
     # Process & Merge videos
     video_infos = []
     for file in videos:
-        formatted, extra_info, tags, dt_obj = get_chat_media_info(file)
+        formatted, extra_info, tags, dt_obj, sort_key_ts = get_chat_media_info(file)
+        ct = get_video_creation_time(file)
+        dur = get_video_duration(file)
+        start_dt = ct if ct else dt_obj
         video_infos.append(
             {
                 "file": file,
@@ -956,11 +1119,23 @@ def process_chat_media():
                 "extra_info": extra_info,
                 "tags": tags,
                 "dt_obj": dt_obj,
+                "start_dt": start_dt,
+                "dur": dur,
+                "sort_key_ts": sort_key_ts,
                 "date_str": file.name.split("_")[0],
             }
         )
 
-    video_infos.sort(key=lambda x: (x["dt_obj"], x["file"].name))
+    # Sort key: (date_str, start_dt, -dur, st_mtime_ns, filename)
+    video_infos.sort(
+        key=lambda x: (
+            x["date_str"],
+            x["start_dt"] if x["start_dt"] else datetime.min,
+            -x["dur"],
+            x["file"].stat().st_mtime_ns if x["file"].exists() else 0,
+            x["file"].name,
+        )
+    )
 
     groups = []
     current_group = []
@@ -971,16 +1146,23 @@ def process_chat_media():
             continue
 
         prev_info = current_group[-1]
-        prev_dt = prev_info["dt_obj"]
-        curr_dt = v_info["dt_obj"]
-
-        time_diff = (
-            abs((curr_dt - prev_dt).total_seconds()) if (prev_dt and curr_dt) else 999
-        )
-        same_tags = prev_info["tags"] == v_info["tags"]
         same_date = prev_info["date_str"] == v_info["date_str"]
+        same_tags = prev_info["tags"] == v_info["tags"]
 
-        if same_date and same_tags and time_diff <= 15:
+        if prev_info["start_dt"] and v_info["start_dt"]:
+            time_diff = abs(
+                (v_info["start_dt"] - prev_info["start_dt"]).total_seconds()
+            )
+            gap = abs(time_diff - prev_info["dur"])
+            is_strict_continuous = (
+                time_diff <= 2.0
+                or gap <= 2.5
+                or (time_diff <= prev_info["dur"] + 2.5 and time_diff >= prev_info["dur"] - 2.5)
+            )
+        else:
+            is_strict_continuous = False
+
+        if same_date and same_tags and is_strict_continuous:
             current_group.append(v_info)
         else:
             groups.append(current_group)
