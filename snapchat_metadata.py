@@ -874,7 +874,12 @@ def get_chat_media_info(file_path: Path) -> tuple:
             stat = file_path.stat()
             for ts in (stat.st_ctime, stat.st_mtime):
                 if ts > 0:
-                    file_ts = ts
+                    dt_local = datetime.fromtimestamp(ts)
+                    time_part = dt_local.strftime("%H:%M:%S")
+                    file_utc_dt = datetime.strptime(
+                        f"{date_str} {time_part}", "%Y-%m-%d %H:%M:%S"
+                    ).replace(tzinfo=pytz.utc)
+                    file_ts = file_utc_dt.timestamp()
                     break
         except Exception:
             pass
